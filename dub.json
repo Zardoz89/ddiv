@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"Luis Panadero Guardeño"
+	],
+	"copyright": "Copyright © 2020, Luis Panadero Guardeño",
+	"dependencies": {
+		"bindbc-sdl": "~>0.16.0"
+	},
+	"description": "DIV inspired 2d game engine",
+	"license": "MIT",
+	"name": "ddiv"
+}
