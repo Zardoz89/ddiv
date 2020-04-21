@@ -41,6 +41,7 @@ dub.selections.json
 *.deps
 .lock-*
 build/*
+bin/*
 .directory
 
 .vscode/
