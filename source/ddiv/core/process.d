@@ -51,6 +51,7 @@ process.frame(int f = 100):
 
 */
 
+/// Process based on Fibers
 class Process : Fiber
 {
 
@@ -83,8 +84,11 @@ class Process : Fiber
     /// Changes process priority
     @property void priority(int priority)
     {
-        this._priority = priority;
-        /// TODO Unregister and register again the process
+        if (priority != this.priority) {
+            this._priority = priority;
+            scheduler.unregisterProcess(this);
+            scheduler.registerProcess(this);
+        }
     }
 
     final void frame(uint percent = 100)
@@ -115,7 +119,8 @@ class Process : Fiber
     override string toString() const
     {
         import std.conv : to;
-        return "Process[" ~ to!string(this._id)
+        import ddiv.core.aux : baseName;
+        return this.classinfo.baseName ~ "[" ~ to!string(this._id)
             ~ ", _executed=" ~ to!string(this._executed)
             ~ ", _frame=" ~ to!string(this._frame)
             ~ ", state=" ~ to!string(this.state)
@@ -144,6 +149,7 @@ private:
 
 }
 
+/// Process Scheduler inspired by DIV process scheduler
 private struct Scheduler
 {
     import ddiv.core.heap : PriorityQueue;
@@ -153,6 +159,7 @@ private struct Scheduler
     {
         process.id = process.id == 0 ? this.generateNewId() : process.id;
 
+        // TODO Handle when the pre-exising process.id is being reused by another process
         this._processes.insert(process.priority, process);
         this._processesSet[process.id] = true;
     }
@@ -180,8 +187,6 @@ private struct Scheduler
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            import std.stdio : writeln;
-            writeln("           ", process);
             if (/+process._state == dead || +/ process.state == Fiber.State.TERM) {
                 this.unregisterProcess(process);
             }
@@ -193,11 +198,13 @@ private struct Scheduler
         this._actualPriority = int.min;
         auto process = this.nextProcessToBeExecuted();
         if (process !is null ) {
+            // Skips process with  _frame > 100 (this happens, for example, when frame(200) is called
             if (process._frame >= 100) {
                 process._frame -= 100;
                 process._executed = true;
+            } else {
+                process.call();
             }
-            process.call();
         }
     }
 
@@ -222,6 +229,7 @@ private:
     {
         import std.random : uniform;
         uint id;
+        // TODO Contemplate what happens when the number of total processes are near int.max
         do {
             id = uniform(1, uint.max);
         } while ((id in _processesSet) !is null);
@@ -247,6 +255,8 @@ static Scheduler scheduler;
 unittest {
 
     import std.stdio : writeln;
+    import std.conv : to;
+
     class MyProcess : Process
     {
         int executeTimes = 0;
@@ -257,7 +267,7 @@ unittest {
 
         override void run()
         {
-            for(int i = 0 ; i < 3; i++) {
+            for(int i = 0 ; i < 4; i++) {
                 executeTimes++;
                 writeln(executeTimes, "->", this.toString());
                 this.frame();
@@ -265,6 +275,7 @@ unittest {
         }
     }
 
+    int frames = 0;
     auto p = new MyProcess();
     assert(p.id != 0);
     assert(p.executeTimes == 1); // At least execute before the first frame()
@@ -277,23 +288,140 @@ unittest {
             assert(scheduler.hasProcessesToExecute()); // The process is ready to be executed
         } else {
             assert(scheduler.empty); // Except when the process has been finished
-            assert(!scheduler.hasProcessesToExecute()); // The process is ready to be executed
+            assert(!scheduler.hasProcessesToExecute());
         }
 
         do {
             scheduler.executeNextProcess();
-            writeln(p);
         } while (scheduler.hasProcessesToExecute);
+        writeln("frame=", frames);
         if (p.state == Fiber.State.HOLD) {
             assert(p._executed);
             assert(!scheduler.hasProcessesToExecute()); // The process has been executed
-            assert(p.executeTimes == i);
+            assert(p.executeTimes == i, "Expected " ~ to!string(i) ~ " but obtained " ~ to!string(p.executeTimes));
         }
+        frames++;
     }
 
     // Verify that terminated processes are deleted
     assert(scheduler.empty);
 
     writeln("Scheduler basic operation OK");
+}
+
+unittest {
+
+    import std.stdio : writeln;
+    import std.conv : to;
+    import std.math : ceil;
+
+    class MyProcess400 : Process
+    {
+        int executeTimes = 0;
+        this()
+        {
+            super();
+        }
+
+        override void run()
+        {
+            for(int i = 0 ; i < 4; i++) {
+                executeTimes++;
+                writeln(executeTimes, "->", this.toString());
+                this.frame(400);
+            }
+        }
+    }
+
+    int frames = 0;
+    auto p = new MyProcess400();
+    assert(p.id != 0);
+    assert(p.executeTimes == 1); // At least execute before the first frame()
+
+    for (int i = 2; i <= 20; i++) {
+        scheduler.prepareProcessesToBeExecuted();
+        scheduler.deleteDeadProcess();
+        if (p.state == Fiber.State.HOLD) {
+            assert(!scheduler.empty); // Must not delete the only process
+            assert(scheduler.hasProcessesToExecute()); // The process is ready to be executed
+        } else {
+            assert(scheduler.empty); // Except when the process has been finished
+            assert(!scheduler.hasProcessesToExecute());
+        }
+
+        do {
+            scheduler.executeNextProcess();
+        } while (scheduler.hasProcessesToExecute);
+        writeln("frame=", frames);
+        if (p.state == Fiber.State.HOLD) {
+            assert(p._executed);
+            assert(!scheduler.hasProcessesToExecute()); // The process has been executed
+            assert(p.executeTimes == ceil(i/4.0), "Expected " ~ to!string(ceil(i/4.0)) ~ " but obtained " ~ to!string(p.executeTimes));
+        }
+        frames++;
+    }
+
+    // Verify that terminated processes are deleted
+    assert(scheduler.empty);
+
+    writeln("Scheduler frame(400) OK");
+}
+
+unittest {
+
+    import std.stdio : writeln;
+    import std.conv : to;
+    import std.math : ceil;
+
+    class MyProcess50 : Process
+    {
+        int executeTimes = 0;
+        this()
+        {
+            super();
+        }
+
+        override void run()
+        {
+            for(int i = 0 ; i < 6; i++) {
+                executeTimes++;
+                writeln(executeTimes, "->", this.toString());
+                this.frame(50);
+            }
+        }
+    }
+
+    int frames = 0;
+    auto p = new MyProcess50();
+    assert(p.id != 0);
+    assert(p.executeTimes == 1); // At least execute before the first frame()
+
+    for (int i = 1; i <= 10; i++) {
+        scheduler.prepareProcessesToBeExecuted();
+        scheduler.deleteDeadProcess();
+        if (p.state == Fiber.State.HOLD) {
+            assert(!scheduler.empty); // Must not delete the only process
+            assert(scheduler.hasProcessesToExecute()); // The process is ready to be executed
+        } else {
+            assert(scheduler.empty); // Except when the process has been finished
+            assert(!scheduler.hasProcessesToExecute());
+        }
+
+        do {
+            scheduler.executeNextProcess();
+        } while (scheduler.hasProcessesToExecute);
+        writeln("frame=", frames);
+        if (p.state == Fiber.State.HOLD) {
+            assert(p._executed);
+            assert(!scheduler.hasProcessesToExecute()); // The process has been executed
+            assert(p.executeTimes == i*2, "Expected " ~ to!string(i*2) ~ " but obtained " ~ to!string(p.executeTimes));
+        }
+        frames++;
+    }
+
+    // Verify that terminated processes are deleted
+    assert(scheduler.empty);
+
+    writeln("Scheduler frame(50) OK");
 }
 
