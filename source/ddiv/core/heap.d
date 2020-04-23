@@ -72,6 +72,18 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
 
     }
 
+    /// Removes an entry of the heap
+    void remove(PV rec) {
+        import std.algorithm.mutation : remove;
+        this._q = this._q.remove!(x => x == rec);
+    }
+
+    /// Removes an entry of the heap
+    void remove(P priority, V value)
+    {
+        this.remove(PV(priority, value));
+    }
+
     /**
      * Merge two Priority Queues, returning the merge.
      * The two queues must obviously be of the same type in Priority and Value, and predicate;
@@ -145,10 +157,14 @@ unittest {
     pq.popFront;
 
     assert( pq.length == 6 );
+
+    // Removing
+    pq.remove(tuple(12, "HELLO12"));
+    assert( pq.length == 5 );
 }
 
 unittest {
-    import std.stdio : writefln;
+    import std.stdio : writefln, writeln;
 
     PriorityQueue!(int, string) pq, pq2, pq3;
 
@@ -172,5 +188,6 @@ unittest {
         pq3.popFront();
     }
 
+    writeln("PriorityQueue OK");
 }
 
