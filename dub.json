@@ -16,5 +16,11 @@
             "beep": "~>0.0.2"
         },
         "targetType": "library"
-    }]
+    }],
+    "buildTypes": {
+        "unittest-opt": {
+            "buildOptions": ["unittests", "optimize", "inline"]
+        }
+    }
+
 }
