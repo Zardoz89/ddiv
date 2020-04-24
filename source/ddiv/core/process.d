@@ -285,6 +285,9 @@ private:
 
 static Scheduler scheduler;
 
+version(unittest) import beep;
+
+@("Scheduler and process with frame(100)")
 unittest {
 
     import std.stdio : writeln;
@@ -343,6 +346,7 @@ unittest {
     writeln("Scheduler basic operation OK");
 }
 
+@("Scheduler and process with frame(400)")
 unittest {
 
     import std.stdio : writeln;
@@ -402,6 +406,7 @@ unittest {
     writeln("Scheduler frame(400) OK");
 }
 
+@("Scheduler and process with frame(50)")
 unittest {
 
     import std.stdio : writeln;

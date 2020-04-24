@@ -12,7 +12,8 @@
     "configurations": [{
         "name": "unittest",
         "dependencies": {
-            "silly": "~>1.0.2"
+            "silly": "~>1.0.2",
+            "beep": "~>0.0.2"
         },
         "targetType": "library"
     }]

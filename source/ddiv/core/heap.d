@@ -104,6 +104,9 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
     }
 
 }
+
+version(unittest) import beep;
+
 @("PriorityQueue")
 unittest {
     alias P = int;
@@ -122,10 +125,10 @@ unittest {
     pq.insert(5, "HELLO5");
     pq.insert(10, "HELLO10-2");
 
-    assert(pq.length == 6);
+    pq.length.expect!equal(6);
 
     foreach (const e; pq) {}    // iteration
-    assert(!pq.empty);          // shouldn't consume queue
+    pq.empty.expect!false;          // shouldn't consume queue
 
     // Copy by value
     pq2 = pq;
@@ -135,8 +138,8 @@ unittest {
     }
 
     // pq and pq2 should be independent
-    assert( !pq2.empty);
-    assert( pq.empty );
+    pq2.empty.expect!false;
+    pq.empty.expect!true;
 
     // Test merging
     pq3.insert(PV(12, "HELLO12"));
@@ -145,7 +148,7 @@ unittest {
 
     pq = pq2.merge(pq3);
 
-    assert ( !pq.empty);
+    pq.empty.expect!false;
 
     assert(pq.front == PV(3, "HELLO3"));
     pq.popFront;
@@ -154,11 +157,11 @@ unittest {
     assert(pq.front == PV(7, "HELLO7"));
     pq.popFront;
 
-    assert( pq.length == 6 );
+    pq.length.expect!equal(6);
 
     // Removing
     pq.remove(PV(12, "HELLO12"));
-    assert( pq.length == 5 );
+    pq.length.expect!equal(5);
 }
 
 @("PriorityQueue 2")
@@ -193,6 +196,6 @@ unittest {
         oldPriority = tuple.priority;
         pq3.popFront();
     }
-    assert(pq3.empty);
+    pq3.empty.expect!true;
 }
 
