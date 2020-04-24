@@ -13,9 +13,8 @@ class MainProcess : Process
     this(string[] args)
     {
         this._args = args;
-        super(1, int.max);
+        super(0, 1, int.max);
     }
-
 
 protected:
     final override void run()
@@ -61,9 +60,9 @@ unittest {
     class MyProcess : Process
     {
         int executeTimes = 0;
-        this()
+        this(uint fatherId)
         {
-            super();
+            super(fatherId);
         }
 
         override void run()
@@ -86,7 +85,9 @@ unittest {
         override int main(string[] args)
         {
             writeln("I'm main! ");
-            auto myP = new MyProcess();
+            auto myP = new MyProcess(this.id);
+            myP.fatherId.expect!equal(this.id);
+            myP.father.expect!equal(this);
             this.frame();
             writeln(myP);
             return 0;

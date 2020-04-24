@@ -58,6 +58,7 @@ private:
     uint _id = 0; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
+    uint _fatherId;
 
 package:
     uint _frame = 0; /// Actual frame percent value
@@ -66,14 +67,15 @@ package:
 public:
 
     /// Creates a DDiv Process
-    this()
+    this(uint fatherId)
     {
-        this(0, 0);
+        this(fatherId, 0, 0);
     }
 
-    package this(uint id, int priority = 0)
+    package this(uint fatherId, uint id, int priority = 0)
     {
         super(&run);
+        this._fatherId = fatherId;
         this._id = id;
         this._priority = priority;
         scheduler.registerProcess(this);
@@ -83,6 +85,18 @@ public:
     @property uint id() const pure @nogc @safe
     {
         return this._id;
+    }
+
+    // Process Id of father process
+    @property uint fatherId() const pure @nogc @safe
+    {
+        return this._fatherId;
+    }
+
+    // Return father Process
+    @property auto father() const @safe
+    {
+        return scheduler.getProcessById(this._fatherId);
     }
 
     /// Return process priority
@@ -148,6 +162,7 @@ public:
             ~ ", _executed=" ~ to!string(this._executed)
             ~ ", _frame=" ~ to!string(this._frame)
             ~ ", state=" ~ to!string(this.state)
+            ~ ", fatherId=" ~ to!string(this.fatherId)
             ~ "]";
 
     }
@@ -246,12 +261,18 @@ public:
         this._processesById.clear;
     }
 
-    @property bool hasProcessesToExecute()
+    auto getProcessById(uint id) const pure @safe
+    {
+        return this._processesById.get(id, null);
+
+    }
+
+    @property bool hasProcessesToExecute() pure @nogc @safe
     {
         return this._hasRemainingProcessesToExecute && !this.empty;
     }
 
-    @property bool empty()
+    @property bool empty() pure @nogc @safe
     {
         return this._processes.empty();
     }
@@ -296,9 +317,9 @@ unittest {
     class MyProcess : Process
     {
         int executeTimes = 0;
-        this()
+        this(uint fatherId)
         {
-            super();
+            super(fatherId);
         }
 
         override void run()
@@ -312,7 +333,7 @@ unittest {
     }
 
     int frames = 0;
-    auto p = new MyProcess();
+    auto p = new MyProcess(0);
     assert(p.id != 0);
     assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
 
@@ -355,9 +376,9 @@ unittest {
     class MyProcess400 : Process
     {
         int executeTimes = 0;
-        this()
+        this(uint fatherId)
         {
-            super();
+            super(fatherId);
         }
 
         override void run()
@@ -371,7 +392,7 @@ unittest {
     }
 
     int frames = 0;
-    auto p = new MyProcess400();
+    auto p = new MyProcess400(0);
     assert(p.id != 0);
     assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
 
@@ -415,9 +436,9 @@ unittest {
     class MyProcess50 : Process
     {
         int executeTimes = 0;
-        this()
+        this(uint fatherId)
         {
-            super();
+            super(fatherId);
         }
 
         override void run()
@@ -431,7 +452,7 @@ unittest {
     }
 
     int frames = 0;
-    auto p = new MyProcess50();
+    auto p = new MyProcess50(0);
     assert(p.id != 0);
     assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
 
