@@ -66,7 +66,6 @@ class Process : Fiber
         this._id = id;
         this._priority = priority;
         scheduler.registerProcess(this);
-        this.call();
     }
 
     /// Returns process Id
@@ -208,6 +207,13 @@ private struct Scheduler
         }
     }
 
+    /// Removes all processes on the scheduler
+    void reset()
+    {
+        this._processes.length = 0;
+        this._processesSet.clear;
+    }
+
     @property bool hasProcessesToExecute()
     {
         return this._hasRemainingProcessesToExecute && !this.empty;
@@ -278,9 +284,9 @@ unittest {
     int frames = 0;
     auto p = new MyProcess();
     assert(p.id != 0);
-    assert(p.executeTimes == 1); // At least execute before the first frame()
+    assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
 
-    for (int i = 2; i <= 10; i++) {
+    for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
         if (p.state == Fiber.State.HOLD) {
@@ -306,6 +312,7 @@ unittest {
     // Verify that terminated processes are deleted
     assert(scheduler.empty);
 
+    scheduler.reset();
     writeln("Scheduler basic operation OK");
 }
 
@@ -336,9 +343,9 @@ unittest {
     int frames = 0;
     auto p = new MyProcess400();
     assert(p.id != 0);
-    assert(p.executeTimes == 1); // At least execute before the first frame()
+    assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
 
-    for (int i = 2; i <= 20; i++) {
+    for (int i = 1; i <= 18; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
         if (p.state == Fiber.State.HOLD) {
@@ -364,6 +371,7 @@ unittest {
     // Verify that terminated processes are deleted
     assert(scheduler.empty);
 
+    scheduler.reset();
     writeln("Scheduler frame(400) OK");
 }
 
@@ -394,9 +402,9 @@ unittest {
     int frames = 0;
     auto p = new MyProcess50();
     assert(p.id != 0);
-    assert(p.executeTimes == 1); // At least execute before the first frame()
+    assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
 
-    for (int i = 1; i <= 10; i++) {
+    for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
         if (p.state == Fiber.State.HOLD) {
@@ -422,6 +430,7 @@ unittest {
     // Verify that terminated processes are deleted
     assert(scheduler.empty);
 
+    scheduler.reset();
     writeln("Scheduler frame(50) OK");
 }
 
