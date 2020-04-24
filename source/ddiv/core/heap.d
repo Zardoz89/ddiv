@@ -1,3 +1,6 @@
+/**
+PriortyQueue build over a BinaryHeap
+*/
 module ddiv.core.heap;
 
 import std.array;
@@ -12,7 +15,7 @@ import std.typecons: Tuple;
 struct PriorityQueue(P, V, alias predicate = "a < b") {
 
     // To make the code a bit more readable
-    alias PV = Tuple!(P, V);
+    alias PV = Tuple!(P, "priority", V, "value");
 
     /// Internal storage on a dynamic array
     PV[] _q;
@@ -64,12 +67,8 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
 
     /// Insert a record via decomposed priority and value
     void insert(P priority, V value) {
-
         PV rec = PV(priority, value);
-
-        // Insert the record
         insert(rec);
-
     }
 
     /// Removes an entry of the heap
@@ -107,11 +106,10 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
 }
 
 unittest {
-
     alias P = int;
     alias V = string;
-    alias PV = Tuple!(P, V);
     alias PQ = PriorityQueue!(P, V, "a < b");
+    alias PV =  PQ.PV;
     PQ pq, pq2, pq3;
 
     import std.typecons: tuple;
@@ -141,52 +139,60 @@ unittest {
     assert( pq.empty );
 
     // Test merging
-    pq3.insert(tuple(12, "HELLO12"));
-    pq3.insert(Tuple!(int, string)(17, "HELLO17"));
-    pq3.insert(tuple(7, "HELLO7"));
+    pq3.insert(PV(12, "HELLO12"));
+    pq3.insert(PV(17, "HELLO17"));
+    pq3.insert(PV(7, "HELLO7"));
 
     pq = pq2.merge(pq3);
 
     assert ( !pq.empty);
 
-    assert(pq.front == tuple(3, "HELLO3"));
+    assert(pq.front == PV(3, "HELLO3"));
     pq.popFront;
-    assert(pq.front == tuple(5, "HELLO5"));
+    assert(pq.front == PV(5, "HELLO5"));
     pq.popFront;
-    assert(pq.front == tuple(7, "HELLO7"));
+    assert(pq.front == PV(7, "HELLO7"));
     pq.popFront;
 
     assert( pq.length == 6 );
 
     // Removing
-    pq.remove(tuple(12, "HELLO12"));
+    pq.remove(PV(12, "HELLO12"));
     assert( pq.length == 5 );
 }
 
 unittest {
     import std.stdio : writefln, writeln;
 
-    PriorityQueue!(int, string) pq, pq2, pq3;
+    alias P = int;
+    alias V = string;
+    alias PQ = PriorityQueue!(P, V, "a < b");
+    alias PV =  PQ.PV;
+
+    PQ pq, pq2, pq3;
 
     pq.insert(10, "HELLO10");
     pq.insert(11, "HELLO11");
-    pq.insert(Tuple!(int, string)(3, "HELLO3"));
+    pq.insert(PV(3, "HELLO3"));
     pq.insert(5, "HELLO5");
-    pq.insert(Tuple!(int, string)(12, "HELLO12"));
-    pq.insert(Tuple!(int, string)(17, "HELLO17"));
+    pq.insert(PV(12, "HELLO12"));
+    pq.insert(PV(17, "HELLO17"));
 
-    pq2.insert(Tuple!(int, string)(15, "HELLO15"));
-    pq2.insert(Tuple!(int, string)(21, "HELLO21"));
+    pq2.insert(PV(15, "HELLO15"));
+    pq2.insert(PV(21, "HELLO21"));
 
     writefln("\tPQ: %s \n\tPQ2: %s \n\tPQ3: %s", pq, pq2, pq3);
 
     pq3 = pq.merge(pq2);
 
-    foreach(priority, value; pq3) {
-
-        writefln("Priority: %s \tValue: %s \tLength: %s", priority, value, pq3.length);
+    int oldPriority = int.min;
+    foreach(i, tuple; pq3) {
+        writefln("Pos: %s \t Priority: %s \tValue: %s \tLength: %s", i, tuple.priority, tuple.value, pq3.length);
+        assert(tuple.priority >= oldPriority);
+        oldPriority = tuple.priority;
         pq3.popFront();
     }
+    assert(pq3.empty);
 
     writeln("PriorityQueue OK");
 }

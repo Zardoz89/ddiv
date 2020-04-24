@@ -54,7 +54,18 @@ process.frame(int f = 100):
 /// Process based on Fibers
 class Process : Fiber
 {
+private:
+    uint _id = 0; // Process ID
+    int _priority = 0; // Process priority
+    int _return; // Return value
 
+package:
+    uint _frame = 0; /// Actual frame percent value
+    bool _executed = 0; /// Has been totally (100%) executed on this frame ?
+
+public:
+
+    /// Creates a DDiv Process
     this()
     {
         this(0, 0);
@@ -90,6 +101,18 @@ class Process : Fiber
         }
     }
 
+    /**
+     * Stops the actual execution of this process.
+     * Params:
+     *  percent     = Percent of executed frame. By default its 100%
+     *
+     * Description:
+     * This method it's called when the process yields the execution. The percent value, indicates how many work
+     * has been completed. So, the default value of 100, indicates that has completed the 100% of the work for
+     * this frame. A value of 400 (400%), indicates that the process has done 400% of the work, so it would be
+     * executed again in 4 frames. A value of 50 (50%, indicates that the process has done only 50% of the work, and it
+     * would be executed again on this frame.
+     */
     final void frame(uint percent = 100)
     {
         this._frame += percent;
@@ -100,11 +123,13 @@ class Process : Fiber
         this.yield();
     }
 
+    /// Returned value from the process when it ends
     @property final int returnValue()
     {
         return this._return;
     }
 
+    /// Sets the returned value of the process when it ends.
     @property final void returnValue(int returnValue)
     {
         this._return = returnValue;
@@ -112,7 +137,7 @@ class Process : Fiber
 
     int opCmp(ref const Process s) const
     {
-        return this.priority - s.priority;
+        return this.id - s.id;
     }
 
     override string toString() const
@@ -128,31 +153,37 @@ class Process : Fiber
     }
 
 package:
+
+    /// Changes the process Id
     @property void id(uint id)
     {
         this._id = id;
     }
-
-    uint _frame = 0;;
-    bool _executed = 0;
 
 protected:
 
     /// Code to be executed by the process
     abstract void run();
 
-private:
-    uint _id = 0; // Process ID
-    int _priority = 0; // Process priority
-    int _return;
-
 }
 
 /// Process Scheduler inspired by DIV process scheduler
 private struct Scheduler
 {
+private:
     import ddiv.core.heap : PriorityQueue;
 
+    /// PriorityQueue (BinaryHeap) that stores the process ordered by his priority
+    PriorityQueue!(int, Process) _processes;
+    /// Associative array to the process by his Id
+    Process[uint] _processesById;
+    /// Actual priority level being executed
+    int _actualPriority;
+    /// Has all remaning processes executed on this frame ?
+    bool _hasRemainingProcessesToExecute;
+
+
+package:
     /// Register a process on the scheduler
     void registerProcess(Process process)
     {
@@ -160,16 +191,17 @@ private struct Scheduler
 
         // TODO Handle when the pre-exising process.id is being reused by another process
         this._processes.insert(process.priority, process);
-        this._processesSet[process.id] = true;
+        this._processesById[process.id] = process;
     }
 
     /// Unregisters a process on the scheduler
     void unregisterProcess(Process process)
     {
         this._processes.remove(process.priority, process);
-        this._processesSet.remove(process.id);
+        this._processesById.remove(process.id);
     }
 
+public:
     void prepareProcessesToBeExecuted()
     {
         foreach (pair; this._processes) {
@@ -211,7 +243,7 @@ private struct Scheduler
     void reset()
     {
         this._processes.length = 0;
-        this._processesSet.clear;
+        this._processesById.clear;
     }
 
     @property bool hasProcessesToExecute()
@@ -225,11 +257,6 @@ private struct Scheduler
     }
 
 private:
-    PriorityQueue!(int, Process) _processes;
-    bool[uint] _processesSet;
-    int _actualPriority;
-    bool _hasRemainingProcessesToExecute;
-
     /// Generates a random process Id that isn't registered
     uint generateNewId()
     {
@@ -238,7 +265,7 @@ private:
         // TODO Contemplate what happens when the number of total processes are near int.max
         do {
             id = uniform(1, uint.max);
-        } while ((id in _processesSet) !is null);
+        } while ((id in _processesById) !is null);
         return id;
     }
 
