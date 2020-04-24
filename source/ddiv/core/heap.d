@@ -104,7 +104,7 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
     }
 
 }
-
+@("PriorityQueue")
 unittest {
     alias P = int;
     alias V = string;
@@ -161,6 +161,7 @@ unittest {
     assert( pq.length == 5 );
 }
 
+@("PriorityQueue 2")
 unittest {
     import std.stdio : writefln, writeln;
 
@@ -193,7 +194,5 @@ unittest {
         pq3.popFront();
     }
     assert(pq3.empty);
-
-    writeln("PriorityQueue OK");
 }
 

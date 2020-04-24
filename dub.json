@@ -1,7 +1,4 @@
 {
-    "name": "ddiv",
-    "description": "DIV inspired 2d game engine",
-    "license": "MIT",
     "authors": [
         "Luis Panadero Guardeño"
     ],
@@ -9,5 +6,14 @@
     "dependencies": {
         "bindbc-sdl": "~>0.16.0"
     },
-    "targetPath": "bin"
+    "description": "DIV inspired 2d game engine",
+    "license": "MIT",
+    "name": "ddiv",
+    "configurations": [{
+        "name": "unittest",
+        "dependencies": {
+            "silly": "~>1.0.2"
+        },
+        "targetType": "library"
+    }]
 }
