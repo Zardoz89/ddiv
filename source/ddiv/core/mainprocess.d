@@ -51,6 +51,9 @@ void frame()
     // frame_end
 }
 
+version(unittest) import beep;
+
+@("MainProcess and MainLoop")
 unittest {
 
     import std.stdio : writeln;
@@ -94,11 +97,9 @@ unittest {
     auto main = new Main([""]);
     writeln(main);
 
-    assert(!scheduler.empty);
+    scheduler.empty.expect!false;
     mainLoop();
-    assert(scheduler.empty);
-
+    scheduler.empty.expect!true;
 
     scheduler.reset();
-    writeln("Ok");
 }

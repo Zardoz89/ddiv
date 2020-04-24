@@ -343,7 +343,6 @@ unittest {
     assert(scheduler.empty);
 
     scheduler.reset();
-    writeln("Scheduler basic operation OK");
 }
 
 @("Scheduler and process with frame(400)")
@@ -394,7 +393,8 @@ unittest {
         if (p.state == Fiber.State.HOLD) {
             assert(p._executed);
             assert(!scheduler.hasProcessesToExecute()); // The process has been executed
-            assert(p.executeTimes == ceil(i/4.0), "Expected " ~ to!string(ceil(i/4.0)) ~ " but obtained " ~ to!string(p.executeTimes));
+            assert(p.executeTimes == ceil(i/4.0),
+                    "Expected " ~ to!string(ceil(i/4.0)) ~ " but obtained " ~ to!string(p.executeTimes));
         }
         frames++;
     }
@@ -403,7 +403,6 @@ unittest {
     assert(scheduler.empty);
 
     scheduler.reset();
-    writeln("Scheduler frame(400) OK");
 }
 
 @("Scheduler and process with frame(50)")
@@ -463,6 +462,5 @@ unittest {
     assert(scheduler.empty);
 
     scheduler.reset();
-    writeln("Scheduler frame(50) OK");
 }
 
