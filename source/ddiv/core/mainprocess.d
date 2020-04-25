@@ -17,6 +17,14 @@ class MainProcess : Process
         super(0, 1, int.max);
     }
 
+    /// Executes the main loop. Only finishs when all remaning processes has die or an exception is throw
+    final void mainLoop()
+    {
+        do {
+            this.frame();
+        } while(!scheduler.empty);
+    }
+
 protected:
     final override void run()
     {
@@ -26,30 +34,25 @@ protected:
     abstract int main(string[] args);
     // TODO No usa un delegate, si no extender un método main y quitar el final de la clase, pero ponerselo a run
 
+    final void frame()
+    {
+        // frame_start
+        scheduler.deleteDeadProcess();
+        scheduler.prepareProcessesToBeExecuted();
+
+        // Execute processes
+        do {
+            scheduler.executeNextProcess();
+        } while (scheduler.hasProcessesToExecute);
+
+        // frame_end
+    }
+
 private:
     string[] _args;
 }
 
-void mainLoop()
-{
-    do {
-        frame();
-    } while(!scheduler.empty);
-}
 
-void frame()
-{
-    // frame_start
-    scheduler.deleteDeadProcess();
-    scheduler.prepareProcessesToBeExecuted();
-
-    // Execute processes
-    do {
-        scheduler.executeNextProcess();
-    } while (scheduler.hasProcessesToExecute);
-
-    // frame_end
-}
 
 version(unittest) import beep;
 
@@ -105,12 +108,9 @@ unittest {
         }
     }
 
-
     auto main = new Main([""]);
 
     scheduler.empty.expect!false; // Main process must be registered
-    mainLoop();
+    main.mainLoop();
     scheduler.empty.expect!true; // mainLoop ends when all process has been executed
-
-    scheduler.reset();
 }
