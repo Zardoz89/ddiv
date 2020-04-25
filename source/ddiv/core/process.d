@@ -314,6 +314,12 @@ public:
 
     void executeNextProcess()
     {
+        debug(ShowProcessIds) {
+            import std.stdio : writeln;
+            import std.algorithm : map;
+            writeln(this._processes.map!(p => p.value.id));
+        }
+
         this._actualPriority = int.min;
         auto process = this.nextProcessToBeExecuted();
         if (process !is null ) {
@@ -392,8 +398,9 @@ version(unittest) import beep;
 @("Scheduler and process with frame(100)")
 unittest {
 
-    import std.stdio : writeln;
-    import std.conv : to;
+    debug(ProcessTestStdout) {
+        import std.stdio : writeln;
+    }
 
     class MyProcess : Process
     {
@@ -407,7 +414,9 @@ unittest {
         {
             for(int i = 0 ; i < 4; i++) {
                 executeTimes++;
-                writeln(executeTimes, "->", this.toString());
+                debug(ProcessTestStdout) {
+                    writeln(executeTimes, "->", this.toString());
+                }
                 this.frame();
             }
         }
@@ -415,34 +424,38 @@ unittest {
 
     int frames = 0;
     auto p = new MyProcess(0);
-    assert(p.id != 0);
-    assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
+    (p.id != 0).expect!true;
+    p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
 
     for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
         if (p.state == Fiber.State.HOLD) {
-            assert(!scheduler.empty); // Must not delete the only process
-            assert(scheduler.hasProcessesToExecute()); // The process is ready to be executed
+            scheduler.empty.expect!false; // Must not delete the only process
+            scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
-            assert(scheduler.empty); // Except when the process has been finished
-            assert(!scheduler.hasProcessesToExecute());
+            scheduler.empty.expect!true; //  Except when the process has been finished
+            scheduler.hasProcessesToExecute().expect!false;
         }
 
         do {
             scheduler.executeNextProcess();
         } while (scheduler.hasProcessesToExecute);
-        writeln("frame=", frames);
+
+        debug(ProcessTestStdout) {
+            writeln("frame=", frames);
+        }
+
         if (p.state == Fiber.State.HOLD) {
-            assert(p._executed);
-            assert(!scheduler.hasProcessesToExecute()); // The process has been executed
-            assert(p.executeTimes == i, "Expected " ~ to!string(i) ~ " but obtained " ~ to!string(p.executeTimes));
+            p._executed.expect!true;
+            scheduler.hasProcessesToExecute().expect!false; // The process has been executed
+            p.executeTimes.expect!equal(i);
         }
         frames++;
     }
 
     // Verify that terminated processes are deleted
-    assert(scheduler.empty);
+    scheduler.empty.expect!true;
 
     scheduler.reset();
 }
@@ -450,8 +463,9 @@ unittest {
 @("Scheduler and process with frame(400)")
 unittest {
 
-    import std.stdio : writeln;
-    import std.conv : to;
+    debug(ProcessTestStdout) {
+        import std.stdio : writeln;
+    }
     import std.math : ceil;
 
     class MyProcess400 : Process
@@ -466,7 +480,9 @@ unittest {
         {
             for(int i = 0 ; i < 4; i++) {
                 executeTimes++;
-                writeln(executeTimes, "->", this.toString());
+                debug(ProcessTestStdout) {
+                    writeln(executeTimes, "->", this.toString());
+                }
                 this.frame(400);
             }
         }
@@ -474,45 +490,47 @@ unittest {
 
     int frames = 0;
     auto p = new MyProcess400(0);
-    assert(p.id != 0);
-    assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
+    (p.id != 0).expect!true;
+    p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
 
     for (int i = 1; i <= 18; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
         if (p.state == Fiber.State.HOLD) {
-            assert(!scheduler.empty); // Must not delete the only process
-            assert(scheduler.hasProcessesToExecute()); // The process is ready to be executed
+            scheduler.empty.expect!false; // Must not delete the only process
+            scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
-            assert(scheduler.empty); // Except when the process has been finished
-            assert(!scheduler.hasProcessesToExecute());
+            scheduler.empty.expect!true; //  Except when the process has been finished
+            scheduler.hasProcessesToExecute().expect!false;
         }
 
         do {
             scheduler.executeNextProcess();
         } while (scheduler.hasProcessesToExecute);
-        writeln("frame=", frames);
+
+        debug(ProcessTestStdout) {
+            writeln("frame=", frames);
+        }
+
         if (p.state == Fiber.State.HOLD) {
-            assert(p._executed);
-            assert(!scheduler.hasProcessesToExecute()); // The process has been executed
-            assert(p.executeTimes == ceil(i/4.0),
-                    "Expected " ~ to!string(ceil(i/4.0)) ~ " but obtained " ~ to!string(p.executeTimes));
+            p._executed.expect!true;
+            scheduler.hasProcessesToExecute().expect!false; // The process has been executed
+            p.executeTimes.expect!equal(ceil(i/4.0));
         }
         frames++;
     }
 
     // Verify that terminated processes are deleted
-    assert(scheduler.empty);
+    scheduler.empty.expect!true;
 
     scheduler.reset();
 }
 
 @("Scheduler and process with frame(50)")
 unittest {
-
-    import std.stdio : writeln;
-    import std.conv : to;
-    import std.math : ceil;
+    debug(ProcessTestStdout) {
+        import std.stdio : writeln;
+    }
 
     class MyProcess50 : Process
     {
@@ -526,7 +544,9 @@ unittest {
         {
             for(int i = 0 ; i < 6; i++) {
                 executeTimes++;
-                writeln(executeTimes, "->", this.toString());
+                debug(ProcessTestStdout) {
+                    writeln(executeTimes, "->", this.toString());
+                }
                 this.frame(50);
             }
         }
@@ -534,34 +554,38 @@ unittest {
 
     int frames = 0;
     auto p = new MyProcess50(0);
-    assert(p.id != 0);
-    assert(p.executeTimes == 0); // Zero executions before the scheduler begins to do his job
+    (p.id != 0).expect!true;
+    p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
 
     for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
         if (p.state == Fiber.State.HOLD) {
-            assert(!scheduler.empty); // Must not delete the only process
-            assert(scheduler.hasProcessesToExecute()); // The process is ready to be executed
+            scheduler.empty.expect!false; // Must not delete the only process
+            scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
-            assert(scheduler.empty); // Except when the process has been finished
-            assert(!scheduler.hasProcessesToExecute());
+            scheduler.empty.expect!true; //  Except when the process has been finished
+            scheduler.hasProcessesToExecute().expect!false;
         }
 
         do {
             scheduler.executeNextProcess();
         } while (scheduler.hasProcessesToExecute);
-        writeln("frame=", frames);
+
+        debug(ProcessTestStdout) {
+            writeln("frame=", frames);
+        }
+
         if (p.state == Fiber.State.HOLD) {
-            assert(p._executed);
-            assert(!scheduler.hasProcessesToExecute()); // The process has been executed
-            assert(p.executeTimes == i*2, "Expected " ~ to!string(i*2) ~ " but obtained " ~ to!string(p.executeTimes));
+            p._executed.expect!true;
+            scheduler.hasProcessesToExecute().expect!false; // The process has been executed
+            p.executeTimes.expect!equal(i*2);
         }
         frames++;
     }
 
     // Verify that terminated processes are deleted
-    assert(scheduler.empty);
+    scheduler.empty.expect!true;
 
     scheduler.reset();
 }

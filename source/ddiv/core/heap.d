@@ -12,7 +12,7 @@ import std.typecons: Tuple;
  * Usage:     PriorityQueue!(PRIORITY_TYPE, VALUE_TYPE, OPTIONAL_PREDICATE)
  * Based on https://forum.dlang.org/post/mdqxpypqvgzyzwfgmsoh@forum.dlang.org
 */
-struct PriorityQueue(P, V, alias predicate = "a < b") {
+struct PriorityQueue(P, V, alias predicate = "a > b") {
 
     // To make the code a bit more readable
     alias PV = Tuple!(P, "priority", V, "value");
@@ -24,28 +24,26 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
     alias _q this;
 
     /// Determine if the queue is empty
-    @property bool empty () {
+    @property bool empty() const pure @nogc @safe {
         return (_q.length == 0);
     }
 
     /// Needed so foreach can work
-    @property PV front() {
-        return _q.front;
+    @property PV front() pure @nogc @safe {
+        return this._q.front;
     }
 
     /// Chop off the front of the array
-    @property void popFront() {
+    @property void popFront() @nogc @safe {
         this._q = this._q[1 .. $];
     }
 
     /// Insert a record via a template tuple
-    void insert(ref PV rec) {
-
+    void insert(ref PV rec) @trusted {
         // Empty queue?
-        if (_q.length == 0 ) {
+        if (this.empty) {
             // just put the record into the queue
-            _q ~= rec;
-
+            this._q ~= rec;
             return;
         }
 
@@ -61,24 +59,24 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
     }
 
     /// Inserts a record
-    void insert(PV rec) {
-        insert(rec);
+    void insert(PV rec) @safe {
+        this.insert(rec);
     }
 
     /// Insert a record via decomposed priority and value
-    void insert(P priority, V value) {
+    void insert(P priority, V value) @safe {
         PV rec = PV(priority, value);
-        insert(rec);
+        this.insert(rec);
     }
 
     /// Removes an entry of the heap
-    void remove(PV rec) {
+    void remove(PV rec) @trusted {
         import std.algorithm.mutation : remove;
         this._q = this._q.remove!(x => x == rec);
     }
 
     /// Removes an entry of the heap
-    void remove(P priority, V value)
+    void remove(P priority, V value) @trusted
     {
         this.remove(PV(priority, value));
     }
@@ -91,7 +89,7 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
 
         // Make a copy of this PriorityQueue
         PriorityQueue!(P, V, predicate)* qreturn = new PriorityQueue!(P, V, predicate);
-        qreturn._q = _q.dup;
+        qreturn._q = this._q.dup;
 
         // Add in all the elements of the merging queue
         foreach(rec; qmerge) {
@@ -100,7 +98,6 @@ struct PriorityQueue(P, V, alias predicate = "a < b") {
 
         // Return the resulting merged queue
         return *qreturn;
-
     }
 
 }
@@ -166,11 +163,13 @@ unittest {
 
 @("PriorityQueue 2")
 unittest {
-    import std.stdio : writefln, writeln;
+    debug(PriorityQueueTestStdout) {
+        import std.stdio : writefln, writeln;
+    }
 
     alias P = int;
     alias V = string;
-    alias PQ = PriorityQueue!(P, V, "a < b");
+    alias PQ = PriorityQueue!(P, V);
     alias PV =  PQ.PV;
 
     PQ pq, pq2, pq3;
@@ -185,14 +184,21 @@ unittest {
     pq2.insert(PV(15, "HELLO15"));
     pq2.insert(PV(21, "HELLO21"));
 
-    writefln("\tPQ: %s \n\tPQ2: %s \n\tPQ3: %s", pq, pq2, pq3);
-
+    debug(PriorityQueueTestStdout) {
+        writefln("\tPQ: %s \n\tPQ2: %s \n\tPQ3: %s", pq, pq2, pq3);
+    }
     pq3 = pq.merge(pq2);
 
-    int oldPriority = int.min;
+    debug(PriorityQueueTestStdout) {
+        import std.algorithm : map;
+        writeln(pq3.map!(x => x.priority));
+    }
+    int oldPriority = int.max;
     foreach(i, tuple; pq3) {
-        writefln("Pos: %s \t Priority: %s \tValue: %s \tLength: %s", i, tuple.priority, tuple.value, pq3.length);
-        assert(tuple.priority >= oldPriority);
+        debug(PriorityQueueTestStdout) {
+            writefln("Pos: %s \t Priority: %s \tValue: %s \tLength: %s", i, tuple.priority, tuple.value, pq3.length);
+        }
+        (tuple.priority <= oldPriority).expect!true;
         oldPriority = tuple.priority;
         pq3.popFront();
     }
