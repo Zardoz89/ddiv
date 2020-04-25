@@ -52,9 +52,10 @@ process.frame(int f = 100):
 */
 
 /// Process based on Fibers
-class Process : Fiber
+class Process
 {
 private:
+    Fiber _fiber;
     uint _id = 0; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
@@ -75,7 +76,7 @@ public:
 
     protected this(uint fatherId, uint id = 0, int priority = 0)
     {
-        super(&run);
+        this._fiber = new Fiber(&run);
         this._fatherId = fatherId;
         this._id = id;
         this._priority = priority;
@@ -83,49 +84,49 @@ public:
     }
 
     /// Returns process Id
-    @property uint id() const pure @nogc @safe
+    @property final uint id() const pure @nogc @safe
     {
         return this._id;
     }
 
     /// Process Id of father process
-    @property uint fatherId() const pure @nogc @safe
+    @property final uint fatherId() const pure @nogc @safe
     {
         return this._fatherId;
     }
 
     /// Return father Process
-    @property auto father() @safe
+    @property final auto father() @safe
     {
         return scheduler.getProcessById(this._fatherId);
     }
 
     /// Returns if this process is orphan
-    @property bool orphan() const pure @nogc @safe
+    @property final bool orphan() const pure @nogc @safe
     {
         return this._fatherId == 0;
     }
 
     /// Children processes ids
-    @property uint[] childrenIds() pure @nogc @safe
+    @property final uint[] childrenIds() pure @nogc @safe
     {
         return this._childrenIds;
     }
 
     /// Children processes
-    @property auto childrens() @safe
+    @property final auto childrens() @safe
     {
         return scheduler.getProcessById(this._childrenIds);
     }
 
     /// Return process priority
-    @property int priority() const pure @nogc @safe
+    @property final int priority() const pure @nogc @safe
     {
         return this._priority;
     }
 
     /// Changes process priority
-    @property void priority(int priority)
+    @property final void priority(int priority)
     {
         if (priority != this.priority) {
             scheduler.changeProcessPriority(this, this._priority, priority);
@@ -152,7 +153,7 @@ public:
             this._frame -= 100;
             this._executed = true;
         }
-        this.yield();
+        this._fiber.yield();
     }
 
     /// Returned value from the process when it ends
@@ -179,7 +180,7 @@ public:
         string str = this.classinfo.baseName ~ "[" ~ to!string(this._id)
             ~ ", _executed=" ~ to!string(this._executed)
             ~ ", _frame=" ~ to!string(this._frame)
-            ~ ", state=" ~ to!string(this.state);
+            ;//~ ", state=" ~ to!string(this.state);
         if (this.orphan) {
             str ~= ", orphan";
         } else {
@@ -192,19 +193,29 @@ public:
 
 package:
 
+    final void call()
+    {
+        this._fiber.call();
+    }
+
+    @property final Fiber.State fiberState()
+    {
+        return this._fiber.state;
+    }
+
     /// Changes the process Id
-    @property void id(uint id) pure @nogc @safe
+    @property final void id(uint id) pure @nogc @safe
     {
         this._id = id;
     }
 
     /// Process Id of father process
-    @property void fatherId(uint fatherId) pure @nogc @safe
+    @property final void fatherId(uint fatherId) pure @nogc @safe
     {
         this._fatherId = fatherId;
     }
     /// Children process ids
-    @property void childrenIds(uint[] childrenIds) pure @nogc @safe
+    @property final void childrenIds(uint[] childrenIds) pure @nogc @safe
     {
         this._childrenIds = childrenIds;
     }
@@ -294,7 +305,7 @@ public:
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            if (process.state == Fiber.State.HOLD) {
+            if (process.fiberState == Fiber.State.HOLD) {
                 process._executed = false;
             }
         }
@@ -306,7 +317,7 @@ public:
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            if (/+process._state == dead || +/ process.state == Fiber.State.TERM) {
+            if (/+process._state == dead || +/ process.fiberState == Fiber.State.TERM) {
                 this.unregisterProcess(process);
             }
         }
@@ -381,7 +392,7 @@ private:
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            if (process.state == Fiber.State.HOLD && !process._executed && process.priority > this._actualPriority) {
+            if (process.fiberState == Fiber.State.HOLD && !process._executed && process.priority > this._actualPriority) {
                 this._actualPriority = process.priority;
                 return process;
             }
@@ -430,7 +441,7 @@ unittest {
     for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
-        if (p.state == Fiber.State.HOLD) {
+        if (p.fiberState == Fiber.State.HOLD) {
             scheduler.empty.expect!false; // Must not delete the only process
             scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
@@ -446,7 +457,7 @@ unittest {
             writeln("frame=", frames);
         }
 
-        if (p.state == Fiber.State.HOLD) {
+        if (p.fiberState == Fiber.State.HOLD) {
             p._executed.expect!true;
             scheduler.hasProcessesToExecute().expect!false; // The process has been executed
             p.executeTimes.expect!equal(i);
@@ -496,7 +507,7 @@ unittest {
     for (int i = 1; i <= 18; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
-        if (p.state == Fiber.State.HOLD) {
+        if (p.fiberState == Fiber.State.HOLD) {
             scheduler.empty.expect!false; // Must not delete the only process
             scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
@@ -512,7 +523,7 @@ unittest {
             writeln("frame=", frames);
         }
 
-        if (p.state == Fiber.State.HOLD) {
+        if (p.fiberState == Fiber.State.HOLD) {
             p._executed.expect!true;
             scheduler.hasProcessesToExecute().expect!false; // The process has been executed
             p.executeTimes.expect!equal(ceil(i/4.0));
@@ -560,7 +571,7 @@ unittest {
     for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
         scheduler.deleteDeadProcess();
-        if (p.state == Fiber.State.HOLD) {
+        if (p.fiberState == Fiber.State.HOLD) {
             scheduler.empty.expect!false; // Must not delete the only process
             scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
@@ -576,7 +587,7 @@ unittest {
             writeln("frame=", frames);
         }
 
-        if (p.state == Fiber.State.HOLD) {
+        if (p.fiberState == Fiber.State.HOLD) {
             p._executed.expect!true;
             scheduler.hasProcessesToExecute().expect!false; // The process has been executed
             p.executeTimes.expect!equal(i*2);
