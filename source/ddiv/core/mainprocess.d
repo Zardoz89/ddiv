@@ -13,6 +13,7 @@ class MainProcess : Process
     this(string[] args)
     {
         this._args = args;
+        // Orphan, id 1, and max priorty
         super(0, 1, int.max);
     }
 
@@ -84,23 +85,32 @@ unittest {
 
         override int main(string[] args)
         {
+            this.orphan.expect!true; // Main process is orphan always
+
             writeln("I'm main! ");
             auto myP = new MyProcess(this.id);
+            writeln(this.toString);
+
+            // Testing simple process hirearchy
+            this.childrenIds.length.expect!equal(1);
+            this.childrenIds.expect!contain(myP.id);
+            myP.orphan.expect!false;
             myP.fatherId.expect!equal(this.id);
             myP.father.expect!equal(this);
+
             this.frame();
             writeln(myP);
+            // myP becomes orphan and keeps runing a few frames more. It must not crash
             return 0;
         }
     }
 
 
     auto main = new Main([""]);
-    writeln(main);
 
-    scheduler.empty.expect!false;
+    scheduler.empty.expect!false; // Main process must be registered
     mainLoop();
-    scheduler.empty.expect!true;
+    scheduler.empty.expect!true; // mainLoop ends when all process has been executed
 
     scheduler.reset();
 }

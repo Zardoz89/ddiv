@@ -58,7 +58,8 @@ private:
     uint _id = 0; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
-    uint _fatherId;
+    uint _fatherId; // Father process Id. if is 0, it's orphan
+    uint[] _childrenIds; // Chuildren process Ids
 
 package:
     uint _frame = 0; /// Actual frame percent value
@@ -72,7 +73,7 @@ public:
         this(fatherId, 0, 0);
     }
 
-    package this(uint fatherId, uint id, int priority = 0)
+    protected this(uint fatherId, uint id = 0, int priority = 0)
     {
         super(&run);
         this._fatherId = fatherId;
@@ -87,16 +88,34 @@ public:
         return this._id;
     }
 
-    // Process Id of father process
+    /// Process Id of father process
     @property uint fatherId() const pure @nogc @safe
     {
         return this._fatherId;
     }
 
-    // Return father Process
-    @property auto father() const @safe
+    /// Return father Process
+    @property auto father() @safe
     {
         return scheduler.getProcessById(this._fatherId);
+    }
+
+    /// Returns if this process is orphan
+    @property bool orphan() const pure @nogc @safe
+    {
+        return this._fatherId == 0;
+    }
+
+    /// Children processes ids
+    @property uint[] childrenIds() pure @nogc @safe
+    {
+        return this._childrenIds;
+    }
+
+    /// Children processes
+    @property auto childrens() @safe
+    {
+        return scheduler.getProcessById(this._childrenIds);
     }
 
     /// Return process priority
@@ -109,9 +128,8 @@ public:
     @property void priority(int priority)
     {
         if (priority != this.priority) {
+            scheduler.changeProcessPriority(this, this._priority, priority);
             this._priority = priority;
-            scheduler.unregisterProcess(this);
-            scheduler.registerProcess(this);
         }
     }
 
@@ -158,21 +176,37 @@ public:
     {
         import std.conv : to;
         import ddiv.core.aux : baseName;
-        return this.classinfo.baseName ~ "[" ~ to!string(this._id)
+        string str = this.classinfo.baseName ~ "[" ~ to!string(this._id)
             ~ ", _executed=" ~ to!string(this._executed)
             ~ ", _frame=" ~ to!string(this._frame)
-            ~ ", state=" ~ to!string(this.state)
-            ~ ", fatherId=" ~ to!string(this.fatherId)
+            ~ ", state=" ~ to!string(this.state);
+        if (this.orphan) {
+            str ~= ", orphan";
+        } else {
+            str ~= ", fatherId=" ~ to!string(this._fatherId);
+        }
+        str ~= ", childrenIds=" ~ to!string(this._childrenIds)
             ~ "]";
-
+        return str;
     }
 
 package:
 
     /// Changes the process Id
-    @property void id(uint id)
+    @property void id(uint id) pure @nogc @safe
     {
         this._id = id;
+    }
+
+    /// Process Id of father process
+    @property void fatherId(uint fatherId) pure @nogc @safe
+    {
+        this._fatherId = fatherId;
+    }
+    /// Children process ids
+    @property void childrenIds(uint[] childrenIds) pure @nogc @safe
+    {
+        this._childrenIds = childrenIds;
     }
 
 protected:
@@ -207,16 +241,55 @@ package:
         // TODO Handle when the pre-exising process.id is being reused by another process
         this._processes.insert(process.priority, process);
         this._processesById[process.id] = process;
+        if (process.fatherId != 0) {
+            auto father = this._processesById[process.fatherId];
+            auto childrens = father.childrenIds;
+            childrens ~= process.id;
+            father.childrenIds = childrens;
+        }
     }
 
     /// Unregisters a process on the scheduler
     void unregisterProcess(Process process)
     {
+        if (process.childrenIds.length > 0) {
+            import std.algorithm : each;
+            // change children father to the father of this process
+            foreach(children ; process.childrens) {
+                children.fatherId = process.fatherId;
+            }
+            // add this process childrens to the father childrens
+            if (process.fatherId != 0) {
+                auto father = this._processesById[process.fatherId];
+                auto fatherChildrens = father.childrenIds;
+                fatherChildrens ~= process.childrenIds;
+                father.childrenIds = fatherChildrens;
+                process.childrenIds = [];
+            }
+        }
+
+        if (process.fatherId != 0) {
+            // Remove process from father childrenIds
+            import std.algorithm : remove;
+            auto father = this._processesById[process.fatherId];
+            auto childrens = father.childrenIds;
+            father.childrenIds = childrens.remove!(id => id == process.id);
+        }
+
+        // Finally we remove the process from the priority queue and from the associative array
         this._processes.remove(process.priority, process);
         this._processesById.remove(process.id);
     }
 
+    /// Updates the priority queue with a change of priority
+    void changeProcessPriority(Process process, int oldPriority, int newPriority)
+    {
+        this._processes.remove(oldPriority, process);
+        this._processes.insert(newPriority, process);
+    }
+
 public:
+    /// Prepare all processes for the next frame
     void prepareProcessesToBeExecuted()
     {
         foreach (pair; this._processes) {
@@ -261,10 +334,18 @@ public:
         this._processesById.clear;
     }
 
-    auto getProcessById(uint id) const pure @safe
+    /// Return a process object by his id, or null if it not exists
+    auto getProcessById(uint id) pure @safe
     {
         return this._processesById.get(id, null);
 
+    }
+
+    /// Returns a range of process objects
+    auto getProcessById(uint[] ids) const pure @safe
+    {
+        import std.algorithm : map;
+        return ids.map!( id => scheduler.getProcessById(id));
     }
 
     @property bool hasProcessesToExecute() pure @nogc @safe
