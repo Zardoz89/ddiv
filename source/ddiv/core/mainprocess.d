@@ -21,20 +21,21 @@ class MainProcess : Process
     final void mainLoop()
     {
         do {
-            this.frame();
+            this.doFrame();
         } while(!scheduler.empty);
     }
 
 protected:
-    final override void run()
+    final override int run()
     {
-        this.returnValue(this.main(this._args));
+        return this.main(this._args);
     }
 
     abstract int main(string[] args);
     // TODO No usa un delegate, si no extender un método main y quitar el final de la clase, pero ponerselo a run
 
-    final void frame()
+    /// Execute a game frame
+    final void doFrame()
     {
         // frame_start
         debug(ShowFrame) {
@@ -77,7 +78,7 @@ unittest {
             super(fatherId);
         }
 
-        override void run()
+        override int run()
         {
             for(int i = 0 ; i < 4; i++) {
                 debug(MainProcessTestStdout) {
@@ -85,6 +86,7 @@ unittest {
                 }
                 this.frame();
             }
+            return 0;
         }
     }
 
@@ -149,7 +151,7 @@ unittest {
             this.createChildrens = createChildrens;
         }
 
-        override void run()
+        override int run()
         {
             import std.random : dice;
 
@@ -170,6 +172,7 @@ unittest {
                     }
                 }
             }
+            return 0;
         }
     }
 

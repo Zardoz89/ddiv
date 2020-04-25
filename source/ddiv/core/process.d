@@ -51,11 +51,29 @@ process.frame(int f = 100):
 
 */
 
+/// Posible states of a Process
+enum ProcessState : ubyte {
+    /// Actually running. By desing only a process can be running at same time
+    RUNNING,
+    /// Waiting to be executed by the scheduler
+    HOLD,
+    /// This process has finished of executing and will be deleted on the next frame
+    DEAD,
+    /// This process is sleeping and need to be wakeup before running
+    SLEEP,
+    /**
+     * This process is freeze and need to be wakeup before running. If have any graphical component associated,
+     * it will be displayed
+     */
+    FREEZE
+}
+
 /// Process based on Fibers
 class Process
 {
 private:
     Fiber _fiber;
+    ProcessState _state = ProcessState.HOLD;
     uint _id = 0; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
@@ -76,7 +94,7 @@ public:
 
     protected this(uint fatherId, uint id = 0, int priority = 0)
     {
-        this._fiber = new Fiber(&run);
+        this._fiber = new Fiber(&runner);
         this._fatherId = fatherId;
         this._id = id;
         this._priority = priority;
@@ -134,6 +152,11 @@ public:
         }
     }
 
+    @property final ProcessState state() const pure @nogc @safe
+    {
+        return this._state;
+    }
+
     /**
      * Stops the actual execution of this process.
      * Params:
@@ -153,6 +176,7 @@ public:
             this._frame -= 100;
             this._executed = true;
         }
+        this._state = ProcessState.HOLD;
         this._fiber.yield();
     }
 
@@ -160,12 +184,6 @@ public:
     @property final int returnValue()
     {
         return this._return;
-    }
-
-    /// Sets the returned value of the process when it ends.
-    @property final void returnValue(int returnValue)
-    {
-        this._return = returnValue;
     }
 
     int opCmp(ref const Process s) const
@@ -180,7 +198,7 @@ public:
         string str = this.classinfo.baseName ~ "[" ~ to!string(this._id)
             ~ ", _executed=" ~ to!string(this._executed)
             ~ ", _frame=" ~ to!string(this._frame)
-            ;//~ ", state=" ~ to!string(this.state);
+            ~ ", state=" ~ to!string(this.state);
         if (this.orphan) {
             str ~= ", orphan";
         } else {
@@ -193,11 +211,14 @@ public:
 
 package:
 
+    /// Continua con la ejecución de este proceso
     final void call()
     {
+        this._state = ProcessState.RUNNING;
         this._fiber.call();
     }
 
+    /// Devuelve el estado de la fibra
     @property final Fiber.State fiberState()
     {
         return this._fiber.state;
@@ -220,10 +241,33 @@ package:
         this._childrenIds = childrenIds;
     }
 
+    @property final void state(ProcessState state) @safe
+    {
+        this._state = state;
+    }
+
+    /// Sets the returned value of the process when it ends.
+    @property final void returnValue(int returnValue)
+    {
+        this._return = returnValue;
+    }
+
+
 protected:
 
     /// Code to be executed by the process
-    abstract void run();
+    abstract int run();
+
+private:
+
+    /// Wrapper around run() to assign the returned value
+    final void runner()
+    {
+        scope(exit) {
+            this._state = ProcessState.DEAD;
+        }
+        this.returnValue(this.run());
+    }
 
 }
 
@@ -317,7 +361,7 @@ public:
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            if (/+process._state == dead || +/ process.fiberState == Fiber.State.TERM) {
+            if (process.state == ProcessState.DEAD || process.fiberState == Fiber.State.TERM) {
                 this.unregisterProcess(process);
             }
         }
@@ -333,7 +377,7 @@ public:
 
         this._actualPriority = int.min;
         auto process = this.nextProcessToBeExecuted();
-        if (process !is null ) {
+        if (process !is null && process.state == ProcessState.HOLD) {
             // Skips process with  _frame > 100 (this happens, for example, when frame(200) is called
             if (process._frame >= 100) {
                 process._frame -= 100;
@@ -421,15 +465,17 @@ unittest {
             super(fatherId);
         }
 
-        override void run()
+        override int run()
         {
             for(int i = 0 ; i < 4; i++) {
                 executeTimes++;
                 debug(ProcessTestStdout) {
                     writeln(executeTimes, "->", this.toString());
                 }
+                this.state.expect!equal(ProcessState.RUNNING);
                 this.frame();
             }
+            return 0;
         }
     }
 
@@ -437,6 +483,7 @@ unittest {
     auto p = new MyProcess(0);
     (p.id != 0).expect!true;
     p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
+    p.state.expect!equal(ProcessState.HOLD);
 
     for (int i = 1; i <= 6; i++) {
         scheduler.prepareProcessesToBeExecuted();
@@ -468,6 +515,8 @@ unittest {
     // Verify that terminated processes are deleted
     scheduler.empty.expect!true;
 
+    p.state.expect!equal(ProcessState.DEAD); // And the process must be dead
+
     scheduler.reset();
 }
 
@@ -487,7 +536,7 @@ unittest {
             super(fatherId);
         }
 
-        override void run()
+        override int run()
         {
             for(int i = 0 ; i < 4; i++) {
                 executeTimes++;
@@ -496,6 +545,7 @@ unittest {
                 }
                 this.frame(400);
             }
+            return 0;
         }
     }
 
@@ -551,7 +601,7 @@ unittest {
             super(fatherId);
         }
 
-        override void run()
+        override int run()
         {
             for(int i = 0 ; i < 6; i++) {
                 executeTimes++;
@@ -560,6 +610,7 @@ unittest {
                 }
                 this.frame(50);
             }
+            return 0;
         }
     }
 
