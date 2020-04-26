@@ -39,7 +39,7 @@ protected:
     {
         // frame_start
         debug(ShowFrame) {
-            import std.stdio;
+            import std.stdio : writeln;
             writeln("Frame start");
         }
         scheduler.deleteDeadProcess();
@@ -51,7 +51,7 @@ protected:
         } while (scheduler.hasProcessesToExecute);
 
         debug(ShowFrame) {
-            import std.stdio;
+            import std.stdio : writeln;
             writeln("Frame end");
         }
         // frame_end
