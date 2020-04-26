@@ -3,60 +3,11 @@ module ddiv.core.process;
 import core.thread.fiber;
 import ddiv.core.scheduler;
 
-/*
-Pseudocode idea from DIV source :
-
-main_loop (while !scheduler.isEmpty()):
-  frame_start
-  do {
-    scheduler.execNextProcess();
-  } while (scheduler.hasProcessToExecute();
-  frame_end
-
-
-frame_start:
-
-1. elimina procesos muertos -> scheduler.deleteDeadProcess();
-2. marca todos los procesos como no ejecutados -> scheduler.prepareAllProcess()
-
-scheduler.execNextProcess():
-  this.max = int.min;
-  process = this.nextProcessToBeExecuted();
-
-  if (process._frame >= 100) {
-    process._frame -= 100;
-    process.executed = true;
-  } else {
-    process.call();
-  }
-
-scheduler.nextProcessToBeExecuted():
-  Process nextProcess;
-  foreach(auto process : processes) {
-    if (process.NoDormido
-            && !process.executed
-            && process.priorty > this.max) {
-        nextProcess = process;
-        max = nextProcess.priority
-    }
-  }
-
-
-process.frame(int f = 100):
-  this._frame += fM
-  if (this._frame >= 100) {
-    this._frame -= 100;
-    this.executed = true;
-  }
-
-
-*/
-
 /// Posible states of a Process
 enum ProcessState : ubyte {
     /// Actually running. By desing only a process can be running at same time
     RUNNING,
-    /// Waiting to be executed by the scheduler
+    /// Waiting to be executed by the Scheduler.get()
     HOLD,
     /// This process has finished of executing and will be deleted on the next frame
     DEAD,
@@ -99,47 +50,47 @@ public:
         this._fatherId = fatherId;
         this._id = id;
         this._priority = priority;
-        scheduler.registerProcess(this);
+        Scheduler.get().registerProcess(this);
     }
 
     /// Returns process Id
-    @property final uint id() const pure @nogc @safe
+    @property final inout(uint) id() inout const pure @nogc @safe nothrow
     {
         return this._id;
     }
 
     /// Process Id of father process
-    @property final uint fatherId() const pure @nogc @safe
+    @property final inout(uint) fatherId() inout const pure @nogc @safe nothrow
     {
         return this._fatherId;
     }
 
     /// Return father Process
-    @property final auto father() @safe
+    @property final auto father() inout @safe
     {
-        return scheduler.getProcessById(this._fatherId);
+        return Scheduler.get().getProcessById(this._fatherId);
     }
 
     /// Returns if this process is orphan
-    @property final bool orphan() const pure @nogc @safe
+    @property final bool orphan() const pure @nogc @safe nothrow
     {
         return this._fatherId == 0;
     }
 
     /// Children processes ids
-    @property final uint[] childrenIds() pure @nogc @safe
+    @property final inout(uint[]) childrenIds() inout pure @nogc @safe nothrow
     {
         return this._childrenIds;
     }
 
     /// Children processes
-    @property final auto childrens() @safe
+    @property final auto childrens() inout @safe
     {
-        return scheduler.getProcessById(this._childrenIds);
+        return Scheduler.get().getProcessById(this._childrenIds);
     }
 
     /// Return process priority
-    @property final int priority() const pure @nogc @safe
+    @property final inout(int) priority() inout const pure @nogc @safe nothrow
     {
         return this._priority;
     }
@@ -148,12 +99,13 @@ public:
     @property final void priority(int priority)
     {
         if (priority != this.priority) {
-            scheduler.changeProcessPriority(this, this._priority, priority);
+            Scheduler.get().changeProcessPriority(this, this._priority, priority);
             this._priority = priority;
         }
     }
 
-    @property final ProcessState state() const pure @nogc @safe
+    /// Returns ptocess state
+    @property final ProcessState state() const pure @nogc @safe nothrow
     {
         return this._state;
     }
@@ -182,17 +134,24 @@ public:
     }
 
     /// Returned value from the process when it ends
-    @property final int returnValue()
+    @property final int returnValue() const pure nothrow @safe
     {
         return this._return;
     }
 
-    int opCmp(ref const Process s) const
+    /// Comparation operator
+    int opCmp(ref const Process other) const pure nothrow @safe
     {
-        return this.id - s.id;
+        return this._id - other._id;
     }
 
-    override string toString() const
+    /// Equals operator (check for equality).
+    bool opEquals()(auto ref const Process other) const pure nothrow @safe
+    {
+        return this._id == this._id;
+    }
+
+    override string toString() const pure
     {
         import std.conv : to;
         import ddiv.core.aux : baseName;
@@ -212,7 +171,7 @@ public:
 
 package:
 
-    /// Continua con la ejecución de este proceso
+    /// Contine con la ejecución de este proceso
     final void call()
     {
         this._state = ProcessState.RUNNING;
@@ -252,7 +211,6 @@ package:
     {
         this._return = returnValue;
     }
-
 
 protected:
 

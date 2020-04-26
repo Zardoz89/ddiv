@@ -6,7 +6,9 @@ module ddiv.core.tests;
 @("Scheduler and process with frame(100)")
 unittest {
     import beep;
+
     import core.thread.fiber;
+
     import ddiv.core.process;
     import ddiv.core.scheduler;
 
@@ -39,23 +41,23 @@ unittest {
     int frames = 0;
     auto p = new MyProcess(0);
     (p.id != 0).expect!true;
-    p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
+    p.executeTimes.expect!equal(0); // Zero executions before the Scheduler.get() begins to do his job
     p.state.expect!equal(ProcessState.HOLD);
 
     for (int i = 1; i <= 6; i++) {
-        scheduler.prepareProcessesToBeExecuted();
-        scheduler.deleteDeadProcess();
+        Scheduler.get().prepareProcessesToBeExecuted();
+        Scheduler.get().deleteDeadProcess();
         if (p.fiberState == Fiber.State.HOLD) {
-            scheduler.empty.expect!false; // Must not delete the only process
-            scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
+            Scheduler.get().empty.expect!false; // Must not delete the only process
+            Scheduler.get().hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
-            scheduler.empty.expect!true; //  Except when the process has been finished
-            scheduler.hasProcessesToExecute().expect!false;
+            Scheduler.get().empty.expect!true; //  Except when the process has been finished
+            Scheduler.get().hasProcessesToExecute().expect!false;
         }
 
         do {
-            scheduler.executeNextProcess();
-        } while (scheduler.hasProcessesToExecute);
+            Scheduler.get().executeNextProcess();
+        } while (Scheduler.get().hasProcessesToExecute);
 
         debug(ProcessTestStdout) {
             writeln("frame=", frames);
@@ -63,24 +65,26 @@ unittest {
 
         if (p.fiberState == Fiber.State.HOLD) {
             p._executed.expect!true;
-            scheduler.hasProcessesToExecute().expect!false; // The process has been executed
+            Scheduler.get().hasProcessesToExecute().expect!false; // The process has been executed
             p.executeTimes.expect!equal(i);
         }
         frames++;
     }
 
     // Verify that terminated processes are deleted
-    scheduler.empty.expect!true;
+    Scheduler.get().empty.expect!true;
 
     p.state.expect!equal(ProcessState.DEAD); // And the process must be dead
 
-    scheduler.reset();
+    Scheduler.get().reset();
 }
 
 @("Scheduler and process with frame(400)")
 unittest {
     import beep;
+
     import core.thread.fiber;
+
     import ddiv.core.process;
     import ddiv.core.scheduler;
 
@@ -113,22 +117,22 @@ unittest {
     int frames = 0;
     auto p = new MyProcess400(0);
     (p.id != 0).expect!true;
-    p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
+    p.executeTimes.expect!equal(0); // Zero executions before the Scheduler.get() begins to do his job
 
     for (int i = 1; i <= 18; i++) {
-        scheduler.prepareProcessesToBeExecuted();
-        scheduler.deleteDeadProcess();
+        Scheduler.get().prepareProcessesToBeExecuted();
+        Scheduler.get().deleteDeadProcess();
         if (p.fiberState == Fiber.State.HOLD) {
-            scheduler.empty.expect!false; // Must not delete the only process
-            scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
+            Scheduler.get().empty.expect!false; // Must not delete the only process
+            Scheduler.get().hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
-            scheduler.empty.expect!true; //  Except when the process has been finished
-            scheduler.hasProcessesToExecute().expect!false;
+            Scheduler.get().empty.expect!true; //  Except when the process has been finished
+            Scheduler.get().hasProcessesToExecute().expect!false;
         }
 
         do {
-            scheduler.executeNextProcess();
-        } while (scheduler.hasProcessesToExecute);
+            Scheduler.get().executeNextProcess();
+        } while (Scheduler.get().hasProcessesToExecute);
 
         debug(ProcessTestStdout) {
             writeln("frame=", frames);
@@ -136,22 +140,24 @@ unittest {
 
         if (p.fiberState == Fiber.State.HOLD) {
             p._executed.expect!true;
-            scheduler.hasProcessesToExecute().expect!false; // The process has been executed
+            Scheduler.get().hasProcessesToExecute().expect!false; // The process has been executed
             p.executeTimes.expect!equal(ceil(i/4.0));
         }
         frames++;
     }
 
     // Verify that terminated processes are deleted
-    scheduler.empty.expect!true;
+    Scheduler.get().empty.expect!true;
 
-    scheduler.reset();
+    Scheduler.get().reset();
 }
 
 @("Scheduler and process with frame(50)")
 unittest {
     import beep;
+
     import core.thread.fiber;
+
     import ddiv.core.process;
     import ddiv.core.scheduler;
 
@@ -183,22 +189,22 @@ unittest {
     int frames = 0;
     auto p = new MyProcess50(0);
     (p.id != 0).expect!true;
-    p.executeTimes.expect!equal(0); // Zero executions before the scheduler begins to do his job
+    p.executeTimes.expect!equal(0); // Zero executions before the Scheduler.get() begins to do his job
 
     for (int i = 1; i <= 6; i++) {
-        scheduler.prepareProcessesToBeExecuted();
-        scheduler.deleteDeadProcess();
+        Scheduler.get().prepareProcessesToBeExecuted();
+        Scheduler.get().deleteDeadProcess();
         if (p.fiberState == Fiber.State.HOLD) {
-            scheduler.empty.expect!false; // Must not delete the only process
-            scheduler.hasProcessesToExecute().expect!true; // The process is ready to be executed
+            Scheduler.get().empty.expect!false; // Must not delete the only process
+            Scheduler.get().hasProcessesToExecute().expect!true; // The process is ready to be executed
         } else {
-            scheduler.empty.expect!true; //  Except when the process has been finished
-            scheduler.hasProcessesToExecute().expect!false;
+            Scheduler.get().empty.expect!true; //  Except when the process has been finished
+            Scheduler.get().hasProcessesToExecute().expect!false;
         }
 
         do {
-            scheduler.executeNextProcess();
-        } while (scheduler.hasProcessesToExecute);
+            Scheduler.get().executeNextProcess();
+        } while (Scheduler.get().hasProcessesToExecute);
 
         debug(ProcessTestStdout) {
             writeln("frame=", frames);
@@ -206,25 +212,27 @@ unittest {
 
         if (p.fiberState == Fiber.State.HOLD) {
             p._executed.expect!true;
-            scheduler.hasProcessesToExecute().expect!false; // The process has been executed
+            Scheduler.get().hasProcessesToExecute().expect!false; // The process has been executed
             p.executeTimes.expect!equal(i*2);
         }
         frames++;
     }
 
     // Verify that terminated processes are deleted
-    scheduler.empty.expect!true;
+    Scheduler.get().empty.expect!true;
 
-    scheduler.reset();
+    Scheduler.get().reset();
 }
 
 
 @("MainProcess and MainLoop - Simple")
 unittest {
     import beep;
+
     import ddiv.core.process;
     import ddiv.core.scheduler;
     import ddiv.core.mainprocess;
+
     debug(MainProcessTestStdout) {
         import std.stdio : writeln;
     }
@@ -287,17 +295,19 @@ unittest {
 
     auto main = new Main([""]);
 
-    scheduler.empty.expect!false; // Main process must be registered
+    Scheduler.get().empty.expect!false; // Main process must be registered
     main.mainLoop();
-    scheduler.empty.expect!true; // mainLoop ends when all process has been executed
+    Scheduler.get().empty.expect!true; // mainLoop ends when all process has been executed
 }
 
 @("MainProcess and MainLoop - Complex hirearchy")
 unittest {
     import beep;
+
     import ddiv.core.process;
     import ddiv.core.scheduler;
     import ddiv.core.mainprocess;
+
     debug(MainProcessTestStdout) {
         import std.stdio : writeln;
     }
@@ -384,9 +394,9 @@ unittest {
 
     auto main = new Main([""]);
 
-    scheduler.empty.expect!false; // Main process must be registered
+    Scheduler.get().empty.expect!false; // Main process must be registered
     main.mainLoop();
-    scheduler.empty.expect!true; // mainLoop ends when all process has been executed
+    Scheduler.get().empty.expect!true; // mainLoop ends when all process has been executed
 }
 
 

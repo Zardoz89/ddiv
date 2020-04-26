@@ -23,7 +23,7 @@ class MainProcess : Process
     {
         do {
             this.doFrame();
-        } while(!scheduler.empty);
+        } while(!Scheduler.get().empty);
     }
 
 protected:
@@ -43,13 +43,13 @@ protected:
             import std.stdio : writeln;
             writeln("Frame start");
         }
-        scheduler.deleteDeadProcess();
-        scheduler.prepareProcessesToBeExecuted();
+        Scheduler.get().deleteDeadProcess();
+        Scheduler.get().prepareProcessesToBeExecuted();
 
         // Execute processes
         do {
-            scheduler.executeNextProcess();
-        } while (scheduler.hasProcessesToExecute);
+            Scheduler.get().executeNextProcess();
+        } while (Scheduler.get().hasProcessesToExecute);
 
         debug(ShowFrame) {
             import std.stdio : writeln;

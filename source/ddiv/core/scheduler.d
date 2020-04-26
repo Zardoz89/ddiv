@@ -5,10 +5,63 @@ module ddiv.core.scheduler;
 
 import core.thread.fiber;
 import ddiv.core.process;
+import ddiv.core.aux;
+
+/*
+Pseudocode idea from DIV source :
+
+main_loop (while !Scheduler.get().isEmpty()):
+  frame_start
+  do {
+    Scheduler.get().execNextProcess();
+  } while (Scheduler.get().hasProcessToExecute();
+  frame_end
+
+
+frame_start:
+
+1. elimina procesos muertos -> Scheduler.get().deleteDeadProcess();
+2. marca todos los procesos como no ejecutados -> Scheduler.get().prepareAllProcess()
+
+Scheduler.get().execNextProcess():
+  this.max = int.min;
+  process = this.nextProcessToBeExecuted();
+
+  if (process._frame >= 100) {
+    process._frame -= 100;
+    process.executed = true;
+  } else {
+    process.call();
+  }
+
+Scheduler.get().nextProcessToBeExecuted():
+  Process nextProcess;
+  foreach(auto process : processes) {
+    if (process.NoDormido
+            && !process.executed
+            && process.priorty > this.max) {
+        nextProcess = process;
+        max = nextProcess.priority
+    }
+  }
+
+
+process.frame(int f = 100):
+  this._frame += fM
+  if (this._frame >= 100) {
+    this._frame -= 100;
+    this.executed = true;
+  }
+
+
+*/
+
 
 /// Process Scheduler inspired by DIV process scheduler
-private struct Scheduler
+final class Scheduler
 {
+    mixin TlsSingleton!Scheduler;
+
 private:
     import ddiv.container : PriorityQueue;
 
@@ -20,7 +73,6 @@ private:
     int _actualPriority;
     /// Has all remaning processes executed on this frame ?
     bool _hasRemainingProcessesToExecute;
-
 
 package:
     /// Register a process on the scheduler
@@ -131,17 +183,17 @@ public:
     }
 
     /// Return a process object by his id, or null if it not exists
-    auto getProcessById(uint id) pure @safe
+    auto getProcessById(const uint id) pure @safe
     {
         return this._processesById.get(id, null);
 
     }
 
     /// Returns a range of process objects
-    auto getProcessById(uint[] ids) const pure @safe
+    auto getProcessById(const uint[] ids) pure @safe
     {
         import std.algorithm : map;
-        return ids.map!( id => scheduler.getProcessById(id));
+        return ids.map!( id => this.getProcessById(id));
     }
 
     @property bool hasProcessesToExecute() pure @nogc @safe
@@ -171,7 +223,8 @@ private:
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            if (process.fiberState == Fiber.State.HOLD && !process._executed && process.priority > this._actualPriority) {
+            if (process.fiberState == Fiber.State.HOLD && !process._executed
+                    && process.priority > this._actualPriority) {
                 this._actualPriority = process.priority;
                 return process;
             }
@@ -180,6 +233,4 @@ private:
         return null;
     }
 }
-
-static Scheduler scheduler;
 
