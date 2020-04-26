@@ -9,6 +9,7 @@
     "description": "DIV inspired 2d game engine",
     "license": "MIT",
     "name": "ddiv",
+    "targetPath": "bin",
     "configurations": [{
         "name": "unittest",
         "dependencies": {
