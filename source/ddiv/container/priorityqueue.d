@@ -1,7 +1,7 @@
 /**
 PriortyQueue build over a BinaryHeap
 */
-module ddiv.core.heap;
+module ddiv.container.priorityqueue;
 
 import std.array;
 import std.range: assumeSorted;
