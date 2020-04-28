@@ -1,3 +1,6 @@
+/**
+Process implemented over Fibers
+*/
 module ddiv.core.process;
 
 import core.thread.fiber;
@@ -20,7 +23,7 @@ enum ProcessState : ubyte {
     FREEZE
 }
 
-/// Process based on Fibers
+/// Process based on Fibers, following the processes of DIV lang
 class Process
 {
 private:
