@@ -162,6 +162,7 @@ public:
             ~ ", _executed=" ~ to!string(this._executed)
             ~ ", _frame=" ~ to!string(this._frame)
             ~ ", state=" ~ to!string(this.state);
+            //~ ", fstate=" ~ to!string(this._fiber.state);
         if (this.orphan) {
             str ~= ", orphan";
         } else {

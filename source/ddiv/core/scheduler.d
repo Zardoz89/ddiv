@@ -223,7 +223,7 @@ private:
     {
         foreach (pair; this._processes) {
             auto process = pair[1];
-            if (process.fiberState == Fiber.State.HOLD && !process._executed
+            if (process.state == ProcessState.HOLD && process.fiberState == Fiber.State.HOLD && !process._executed
                     && process.priority > this._actualPriority) {
                 this._actualPriority = process.priority;
                 return process;
