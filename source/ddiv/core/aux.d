@@ -25,9 +25,6 @@ string baseName(const ClassInfo classinfo) pure {
     return qualName[$ - dotIndex .. $];
 }
 
-/// Returns true if a class have the default constructor and is accesible.
-enum HasDefaultCtor(T) = __traits(compiles, new T());
-
 /**
  * Implements the TLS fast thread safe singleton
  * Source: http://p0nce.github.io/d-idioms/#Leveraging-TLS-for-a-fast-thread-safe-singleton
@@ -36,7 +33,7 @@ mixin template Singleton()
 {
     private alias ThisType = typeof(this);
     static assert(is(ThisType == class), "This mixin only works with classes.");
-    static assert(HasDefaultCtor!ThisType, "This function relies on the class having a default constructor.");
+    static assert(__traits(compiles, new ThisType()), "This function relies on the class having a default constructor.");
 
     private static bool instantiated_;
     private __gshared ThisType instance_;
@@ -61,7 +58,7 @@ mixin template TlsSingleton()
 {
     private alias ThisType = typeof(this);
     static assert(is(ThisType == class), "This mixin only works with classes.");
-    static assert(HasDefaultCtor!ThisType, "This function relies on the class having a default constructor.");
+    static assert(__traits(compiles, new ThisType()), "This function relies on the class having a default constructor.");
 
     private static ThisType instance_;
     public static ThisType get() @trusted

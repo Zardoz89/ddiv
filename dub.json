@@ -1,32 +1,41 @@
 {
-	"authors": [
-		"Luis Panadero Guardeño"
-	],
-	"buildTypes": {
-		"unittest-opt": {
-			"buildOptions": [
-				"inline",
-				"optimize",
-				"unittests"
-			]
-		}
-	},
-	"configurations": [
-		{
-			"dependencies": {
-				"beep": "~>0.0.2",
-				"silly": "~>1.0.2"
-			},
-			"name": "unittest",
-			"targetType": "library"
-		}
-	],
-	"copyright": "Copyright © 2020, Luis Panadero Guardeño",
-	"dependencies": {
-		"bindbc-sdl": "~>0.16.0"
-	},
-	"description": "DIV inspired 2d game engine",
-	"license": "MIT",
-	"name": "ddiv",
-	"targetPath": "bin"
+    "authors": [
+        "Luis Panadero Guardeño"
+    ],
+    "copyright": "Copyright © 2020, Luis Panadero Guardeño",
+    "dependencies": {
+        "bindbc-sdl": "~>0.16.0"
+    },
+    "description": "DIV inspired 2d game engine",
+    "license": "MIT",
+    "name": "ddiv",
+    "targetPath": "bin",
+    "versions": [
+        "BindSDL_Image",
+        "SDL_2010",
+        "SDLImage205"
+    ],
+    "configurations": [
+        {
+            "name": "example",
+            "targetType": "executable"
+        },
+        {
+            "name": "unittest",
+            "dependencies": {
+                "silly": "~>1.0.2",
+                "beep": "~>0.0.2"
+            },
+            "targetType": "library",
+            "excludedSourceFiles": [
+                "source/app.d"
+            ]
+        }
+    ],
+    "buildTypes": {
+        "unittest-opt": {
+            "buildOptions": ["unittests", "optimize", "inline"]
+        }
+    }
+
 }

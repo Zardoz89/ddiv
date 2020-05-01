@@ -231,7 +231,7 @@ unittest {
 
     import ddiv.core.process;
     import ddiv.core.scheduler;
-    import ddiv.core.mainprocess;
+    import ddiv.core.abstractmainprocess;
 
     debug(MainProcessTestStdout) {
         import std.stdio : writeln;
@@ -256,11 +256,20 @@ unittest {
         }
     }
 
-    final class Main : MainProcess
+    final class Main : AbstractMainProcess
     {
         this(string[] args)
         {
-            super(args);
+            super(args, []);
+        }
+
+        override bool initLibs()
+        {
+            return true;
+        }
+
+        override void quitLibs()
+        {
         }
 
         override int main(string[] args)
@@ -306,7 +315,7 @@ unittest {
 
     import ddiv.core.process;
     import ddiv.core.scheduler;
-    import ddiv.core.mainprocess;
+    import ddiv.core.abstractmainprocess;
 
     debug(MainProcessTestStdout) {
         import std.stdio : writeln;
@@ -348,11 +357,20 @@ unittest {
         }
     }
 
-    final class Main : MainProcess
+    final class Main : AbstractMainProcess
     {
         this(string[] args)
         {
-            super(args);
+            super(args, []);
+        }
+
+        override bool initLibs()
+        {
+            return true;
+        }
+
+        override void quitLibs()
+        {
         }
 
         override int main(string[] args)

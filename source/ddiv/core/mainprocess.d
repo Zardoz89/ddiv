@@ -1,10 +1,10 @@
 module ddiv.core.mainprocess;
 
-import ddiv.core.process;
-import ddiv.core.scheduler;
+import ddiv.core.abstractmainprocess;
+import ddiv.sdl.sdlgraphics;
 
-/// Initial process
-class MainProcess : Process
+/// Base class to build the main process of any game, using SDL2
+abstract class MainProcess : AbstractMainProcess
 {
     /**
      * Creates the initial process
@@ -13,53 +13,40 @@ class MainProcess : Process
      */
     this(string[] args)
     {
-        this._args = args;
-        // Orphan, id 1, and max priorty
-        super(0, 1, int.max);
+        import ddiv.sdl.sdlloader : loadSDLLibraries;
+        super( args, [ &loadSDLLibraries]);
     }
 
-    /// Executes the main loop. Only finishs when all remaning processes has die or an exception is throw
-    final void mainLoop()
+    override bool initLibs()
     {
-        do {
-            this.doFrame();
-        } while(!Scheduler.get().empty);
-    }
-
-protected:
-    final override int run()
-    {
-        return this.main(this._args);
-    }
-
-    abstract int main(string[] args);
-    // TODO No usa un delegate, si no extender un método main y quitar el final de la clase, pero ponerselo a run
-
-    /// Execute a game frame
-    final void doFrame()
-    {
-        // frame_start
-        debug(ShowFrame) {
-            import ddiv.log;
-            trace("Frame start");
+        auto graphics = SDLWrapper.get();
+        if (!graphics.initVideo( this._args)) {
+            return false;
         }
-        Scheduler.get().deleteDeadProcess();
-        Scheduler.get().prepareProcessesToBeExecuted();
+        graphics.createWindow(); // TODO Move this to another method
+        return true;
+    }
 
-        // Execute processes
-        do {
-            Scheduler.get().executeNextProcess();
-        } while (Scheduler.get().hasProcessesToExecute);
+    override void quitLibs()
+    {
+        SDLWrapper.get().quit();
+    }
 
-        debug(ShowFrame) {
-            import ddiv.log;
-            trace("Frame end");
-        }
-        // frame_end
+    override void frameStart()
+    {
+        super.frameStart();
+        auto graphics = SDLWrapper.get();
+
+        graphics.clearScreen();
+    }
+
+    override void frameEnd()
+    {
+        super.frameEnd();
+        SDLWrapper.get().render();
+        SDLWrapper.get().pullEvents();
     }
 
 private:
-    string[] _args;
+    string _windowTitle = "a";
 }
-
-
