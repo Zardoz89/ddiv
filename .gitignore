@@ -46,3 +46,6 @@ bin/*
 
 .vscode/
 
+.idea/
+classes/
+ddiv.iml
