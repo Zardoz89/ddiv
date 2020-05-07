@@ -25,47 +25,52 @@ string baseName(const ClassInfo classinfo) pure {
     return qualName[$ - dotIndex .. $];
 }
 
+/// Returns true if a class have the default constructor and is accesible.
+enum HasDefaultCtor(T) = __traits(compiles, new T());
+
 /**
  * Implements the TLS fast thread safe singleton
  * Source: http://p0nce.github.io/d-idioms/#Leveraging-TLS-for-a-fast-thread-safe-singleton
  */
-mixin template Singleton(T)
+mixin template Singleton()
 {
-    mixin("
-        private static bool instantiated_;
-        private __gshared T instance_;
+    private alias ThisType = typeof(this);
+    static assert(is(ThisType == class), "This mixin only works with classes.");
+    static assert(HasDefaultCtor!ThisType, "This function relies on the class having a default constructor.");
 
-        public static T get() @trusted
-        {
-            if (!instantiated_) {
-                synchronized (T.classinfo) {
-                    if (!instance_) {
-                        instance_ = new T();
-                    }
-                    instantiated_ = true;
+    private static bool instantiated_;
+    private __gshared ThisType instance_;
+    public static ThisType get() @trusted
+    {
+        if (!instantiated_) {
+            synchronized (ThisType.classinfo) {
+                if (!instance_) {
+                    instance_ = new ThisType();
                 }
+                instantiated_ = true;
             }
-            return instance_;
         }
-    ");
+        return instance_;
+    }
 }
 
 /**
  * Implements a singleton over TLS . Unsafe for multi-thread usage.
  */
-mixin template TlsSingleton(T)
+mixin template TlsSingleton()
 {
-    mixin("
-        private static T instance_;
+    private alias ThisType = typeof(this);
+    static assert(is(ThisType == class), "This mixin only works with classes.");
+    static assert(HasDefaultCtor!ThisType, "This function relies on the class having a default constructor.");
 
-        public static T get() @trusted
-        {
-            if (!instance_) {
-                instance_ = new T();
-            }
-            return instance_;
+    private static ThisType instance_;
+    public static ThisType get() @trusted
+    {
+        if (!instance_) {
+            instance_ = new ThisType();
         }
-    ");
+        return instance_;
+    }
 }
 
 
@@ -77,14 +82,14 @@ version(unittest) {
     {
         private this() {}
         int x;
-        mixin Singleton!MySingleton;
+        mixin Singleton;
     }
 
     class MyLocalSingleton
     {
         private this() {}
         int x;
-        mixin TlsSingleton!MyLocalSingleton;
+        mixin TlsSingleton;
     }
 }
 

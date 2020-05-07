@@ -60,7 +60,7 @@ process.frame(int f = 100):
 /// Process Scheduler inspired by DIV process scheduler
 final class Scheduler
 {
-    mixin TlsSingleton!Scheduler;
+    mixin TlsSingleton;
 
 private:
     import ddiv.container : PriorityQueue;
