@@ -40,8 +40,8 @@ protected:
     {
         // frame_start
         debug(ShowFrame) {
-            import std.stdio : writeln;
-            writeln("Frame start");
+            import ddiv.log;
+            trace("Frame start");
         }
         Scheduler.get().deleteDeadProcess();
         Scheduler.get().prepareProcessesToBeExecuted();
@@ -52,8 +52,8 @@ protected:
         } while (Scheduler.get().hasProcessesToExecute);
 
         debug(ShowFrame) {
-            import std.stdio : writeln;
-            writeln("Frame end");
+            import ddiv.log;
+            trace("Frame end");
         }
         // frame_end
     }

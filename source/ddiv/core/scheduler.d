@@ -157,9 +157,9 @@ public:
     void executeNextProcess()
     {
         debug(ShowProcessIds) {
-            import std.stdio : writeln;
             import std.algorithm : map;
-            writeln(this._processes.map!(p => p.value.id));
+            import ddiv.log;
+            trace(this._processes.map!(p => p.value.id));
         }
 
         this._actualPriority = int.min;

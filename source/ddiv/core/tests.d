@@ -405,7 +405,6 @@ unittest {
 unittest
 {
     import ddiv.log;
-    import ddiv.log.consolelogger;
 
     configLogger();
 
