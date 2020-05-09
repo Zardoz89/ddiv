@@ -400,3 +400,22 @@ unittest {
 }
 
 
+
+@("log")
+unittest
+{
+    import ddiv.log;
+    import ddiv.log.consolelogger;
+
+    configLogger();
+
+    log("Log");
+    trace("Tracing");
+    info("Info");
+    warning("warn");
+    error("error");
+    critical("critical");
+    //fatal("fatal");
+}
+
+

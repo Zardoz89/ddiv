@@ -49,3 +49,5 @@ bin/*
 .idea/
 classes/
 ddiv.iml
+
+*.log
