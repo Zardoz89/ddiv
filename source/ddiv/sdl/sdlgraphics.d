@@ -11,7 +11,7 @@ import std.typecons;
 
 class SDLWrapper  {
     package shared graphStorageLock = new Object();
-    package __gshared Graph[uint] graphStorage; // Storage of graphics associated to a ID
+    package __gshared Graph[GraphId] graphStorage; // Storage of graphics associated to a ID
 
     mixin Singleton;
     private this() {}
@@ -149,7 +149,7 @@ class SDLWrapper  {
     }
 
     // Must be called inside of a synchronized (graphStorage) block
-    package uint generateGraphId()
+    package GraphId generateGraphId()
     {
         if (graphStorage.length == 0) {
             return 1;
@@ -159,7 +159,7 @@ class SDLWrapper  {
         return graphStorage.byKey().maxElement + 1;
     }
 
-    void destroyTexture(Texture* texture)
+    package void destroyTexture(Texture* texture)
     {
         SDL_DestroyTexture(texture);
         debug {
@@ -169,6 +169,47 @@ class SDLWrapper  {
                 error("SDL error: ", to!string(errorStr));
                 SDL_ClearError();
             }
+        }
+    }
+
+    /**
+     * Reads a graphics image file and store it as a GPU texture
+     *
+     * Params:
+     *  path : Path to the image file
+     * Returns : A GraphId on sucess, or NullGraph on case of error
+     */
+    GraphId loadMap(string path)
+    {
+        // TODO Check if file exists
+        auto t = createTextureFromMap(path);
+        if (t[0] is null) {
+            return NullGraph;
+        }
+        GraphId id = NullGraph;
+        synchronized (graphStorageLock) {
+            id = this.generateGraphId();
+            if (id == NullGraph) {
+                destroyTexture(t[0]);
+                return NullGraph;
+            }
+
+            graphStorage[id] = Graph(id, t[0], t[1], t[2]);
+        }
+        return id;
+    }
+
+    /**
+     * Unloads a graphic from GPU Texture
+     */
+    void unloadMap(GraphId id)
+    {
+        synchronized (graphStorageLock) {
+            Graph* g = id in graphStorage;
+            if (g !is null) {
+                destroyTexture(g.texture);
+            }
+            graphStorage.remove(id);
         }
     }
 

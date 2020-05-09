@@ -46,9 +46,13 @@ unittest {
     assert(BlendMode.Modulate.to!SDL_BlendMode == SDL_BLENDMODE_MOD);
 }
 
+/// Graph Id
+alias GraphId = uint;
+enum NullGraph = 0; /// Inavlid graph Id
+
 /// A game sprite
 struct Graph {
-    uint id;
+    GraphId id;
     Texture* texture;
     int w;
     int h;

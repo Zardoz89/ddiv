@@ -27,7 +27,7 @@ int main(string[] args)
 {
     import ddiv.log;
     configLogger();
-    
+
     auto main = new Main(args);
     return main.runGame();
 }
