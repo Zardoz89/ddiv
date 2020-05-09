@@ -1,5 +1,6 @@
 module ddiv.sdl.sdlgraphics;
 
+import ddiv.log;
 import ddiv.core.aux : Singleton;
 public import ddiv.sdl.graphspod;
 
@@ -17,21 +18,20 @@ class SDLWrapper  {
 
     bool initVideo(string[] args)
     {
-        import std.stdio : stderr, writeln;
         import std.conv : to;
 
-        writeln("Init SDL libraries...");
+        info("Init SDL libraries...");
 
         const sdlFlags = SDL_INIT_VIDEO | SDL_INIT_TIMER;
         if (SDL_Init(sdlFlags) != 0) {
-            stderr.writeln("SDL_Init: ", to!string(SDL_GetError()));
+            critical("SDL_Init: ", to!string(SDL_GetError()));
             return false;
         }
         this._initializedSdl = true;
 
         const imageFlags = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF;
         if ((IMG_Init(imageFlags) & imageFlags) != imageFlags) {
-            writeln("IMG_Init: ", to!string(IMG_GetError()));
+            critical("IMG_Init: ", to!string(IMG_GetError()));
             return false;
         }
         this._initializedSdlImage = true;
@@ -41,7 +41,6 @@ class SDLWrapper  {
 
     void createWindow()
     {
-        import std.stdio : stderr, writeln;
         import std.string : toStringz;
 
         SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
@@ -53,13 +52,13 @@ class SDLWrapper  {
         windowFlags
         );
         if (this._appWindow is null) {
-            stderr.writeln("SDL_CreateWindow: ", SDL_GetError());
+            critical("SDL_CreateWindow: ", SDL_GetError());
             return;
         }
         //Create and init the renderer
         this._renderer = SDL_CreateRenderer(this._appWindow, -1, SDL_RENDERER_ACCELERATED);
         if( this._renderer is null) {
-            writeln("SDL_CreateRenderer: ", SDL_GetError());
+            critical("SDL_CreateRenderer: ", SDL_GetError());
             return;
         }
     }
@@ -119,7 +118,6 @@ class SDLWrapper  {
     private Tuple!(Texture*, int, int) createTextureFromMap(string path)
     //in (path !is null)
     {
-        import std.stdio : writeln, stderr;
         import std.conv : to;
         import std.string : toStringz;
 
@@ -128,7 +126,7 @@ class SDLWrapper  {
         // Load image to RAM
         SDL_Surface* surface = IMG_Load(path.toStringz);
         if (surface is null) {
-            stderr.writeln("IMG_Load: ", to!string(IMG_GetError()));
+            error("IMG_Load: ", to!string(IMG_GetError()));
             return retTuple;
         }
         scope(exit) {
@@ -143,7 +141,7 @@ class SDLWrapper  {
         // Converting the surface to a texture
         SDL_Texture* texture = SDL_CreateTextureFromSurface(this._renderer, surface);
         if( texture is null) {
-            stderr.writeln("SDL_CreateTextureFromSurface: ", to!string(SDL_GetError()));
+            error("SDL_CreateTextureFromSurface: ", to!string(SDL_GetError()));
             return retTuple;
         }
         retTuple[0] = texture;
@@ -165,11 +163,10 @@ class SDLWrapper  {
     {
         SDL_DestroyTexture(texture);
         debug {
-            const char* error = SDL_GetError();
-            if (*error) {
-                import std.stdio : writeln, stderr;
+            const char* errorStr = SDL_GetError();
+            if (*errorStr) {
                 import std.conv : to;
-                stderr.writeln("SDL error: ", to!string(error));
+                error("SDL error: ", to!string(errorStr));
                 SDL_ClearError();
             }
         }

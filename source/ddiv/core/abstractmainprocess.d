@@ -2,7 +2,7 @@ module ddiv.core.abstractmainprocess;
 
 import ddiv.core.process;
 import ddiv.core.scheduler;
-
+import ddiv.log;
 import ddiv.sdl.sdlgraphics;
 
 /// Base class of the initial process. Don't know anything about graphics stuff, etc
@@ -56,8 +56,7 @@ abstract class AbstractMainProcess : Process
 
     private void showAbortMessage()
     {
-        import std.stdio : stderr, writeln;
-        stderr.writeln("Aborting execution.");
+        critical("Aborting execution.");
     }
 
 
@@ -97,8 +96,7 @@ abstract class AbstractMainProcess : Process
     void frameStart()
     {
         debug(ShowFrame) {
-            import std.stdio : writeln;
-            writeln("Frame start");
+            trace("Frame start");
         }
 
         auto scheduler = Scheduler.get();
@@ -109,8 +107,7 @@ abstract class AbstractMainProcess : Process
     void frameEnd()
     {
         debug(ShowFrame) {
-            import std.stdio : writeln;
-            writeln("Frame end");
+            trace("Frame end");
         }
     }
 
