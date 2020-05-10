@@ -6,6 +6,9 @@ module ddiv.core.process;
 import core.thread.fiber;
 import ddiv.core.scheduler;
 
+/// Id of a process
+alias ProcessId = uint;
+
 /// Posible states of a Process
 enum ProcessState : ubyte {
     /// Actually running. By desing only a process can be running at same time
@@ -29,11 +32,11 @@ class Process
 private:
     Fiber _fiber;
     ProcessState _state = ProcessState.HOLD;
-    uint _id = 0; // Process ID
+    ProcessId _id = 0; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
-    uint _fatherId; // Father process Id. if is 0, it's orphan
-    uint[] _childrenIds; // Chuildren process Ids
+    ProcessId _fatherId; // Father process Id. if is 0, it's orphan
+    ProcessId[] _childrenIds; // Chuildren process Ids
 
 package:
     uint _frame = 0; /// Actual frame percent value
@@ -42,7 +45,7 @@ package:
 public:
 
     /// Creates a DDiv Process
-    this(uint fatherId)
+    this(ProcessId fatherId)
     {
         this(fatherId, 0, 0);
     }
@@ -57,13 +60,13 @@ public:
     }
 
     /// Returns process Id
-    @property final inout(uint) id() inout const pure @nogc @safe nothrow
+    @property final inout(ProcessId) id() inout const pure @nogc @safe nothrow
     {
         return this._id;
     }
 
     /// Process Id of father process
-    @property final inout(uint) fatherId() inout const pure @nogc @safe nothrow
+    @property final inout(ProcessId) fatherId() inout const pure @nogc @safe nothrow
     {
         return this._fatherId;
     }
@@ -81,7 +84,7 @@ public:
     }
 
     /// Children processes ids
-    @property final inout(uint[]) childrenIds() inout pure @nogc @safe nothrow
+    @property final inout(ProcessId[]) childrenIds() inout pure @nogc @safe nothrow
     {
         return this._childrenIds;
     }
@@ -189,18 +192,18 @@ package:
     }
 
     /// Changes the process Id
-    @property final void id(uint id) pure @nogc @safe
+    @property final void id(ProcessId id) pure @nogc @safe
     {
         this._id = id;
     }
 
     /// Process Id of father process
-    @property final void fatherId(uint fatherId) pure @nogc @safe
+    @property final void fatherId(ProcessId fatherId) pure @nogc @safe
     {
         this._fatherId = fatherId;
     }
     /// Children process ids
-    @property final void childrenIds(uint[] childrenIds) pure @nogc @safe
+    @property final void childrenIds(ProcessId[] childrenIds) pure @nogc @safe
     {
         this._childrenIds = childrenIds;
     }
