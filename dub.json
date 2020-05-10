@@ -3,6 +3,18 @@
 		"Luis Panadero Guardeño"
 	],
 	"buildTypes": {
+		"docs": {
+			"buildOptions": [
+				"syntaxOnly"
+			],
+			"dflags": [
+				"-c",
+				"-Dddocs"
+			],
+			"dflags-dmd": [
+				"-preview=markdown"
+			]
+		},
 		"unittest-opt": {
 			"buildOptions": [
 				"inline",
@@ -13,17 +25,25 @@
 	},
 	"configurations": [
 		{
+            "name": "ddiv",
+            "targetType": "library"
+        },
+		{
 			"dependencies": {
+				"silly": "~>1.0.2",
 				"beep": "~>0.0.2",
-				"silly": "~>1.0.2"
+				"pijamas": "~develop"
 			},
 			"name": "unittest",
-			"targetType": "library"
+			"targetType": "library",
+			"importPaths": ["source", "tests"],
+            "sourcePaths": ["source", "tests"]
 		}
 	],
 	"copyright": "Copyright © 2020, Luis Panadero Guardeño",
 	"dependencies": {
-		"bindbc-sdl": "~>0.16.0"
+		"bindbc-sdl": "~>0.16.0",
+		"stdx-allocator": "~>3.0.2"
 	},
 	"description": "DIV inspired 2d game engine",
 	"license": "MIT",
