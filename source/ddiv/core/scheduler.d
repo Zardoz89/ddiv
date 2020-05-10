@@ -49,6 +49,7 @@ Scheduler.get().nextProcessToBeExecuted():
 process.frame(int f = 100):
   this._frame += fM
   if (this._frame >= 100) {
+ * }
     this._frame -= 100;
     this.executed = true;
   }
@@ -196,12 +197,12 @@ public:
         return ids.map!( id => this.getProcessById(id));
     }
 
-    @property bool hasProcessesToExecute() pure @nogc @safe
+    bool hasProcessesToExecute() pure @nogc @safe
     {
         return this._hasRemainingProcessesToExecute && !this.empty;
     }
 
-    @property bool empty() pure @nogc @safe
+    bool empty() pure @nogc @safe
     {
         return this._processes.empty();
     }

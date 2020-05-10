@@ -24,17 +24,17 @@ struct PriorityQueue(P, V, alias predicate = "a > b") {
     alias _q this;
 
     /// Determine if the queue is empty
-    @property bool empty() const pure @nogc @safe {
+    bool empty() const pure @nogc @safe {
         return (_q.length == 0);
     }
 
     /// Needed so foreach can work
-    @property PV front() pure @nogc @safe {
+    PV front() pure @nogc @safe {
         return this._q.front;
     }
 
     /// Chop off the front of the array
-    @property void popFront() @nogc @safe {
+    void popFront() @nogc @safe {
         this._q = this._q[1 .. $];
     }
 

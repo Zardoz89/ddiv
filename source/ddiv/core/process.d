@@ -60,49 +60,49 @@ public:
     }
 
     /// Returns process Id
-    @property final inout(ProcessId) id() inout const pure @nogc @safe nothrow
+    final inout(ProcessId) id() inout const pure @nogc @safe nothrow
     {
         return this._id;
     }
 
     /// Process Id of father process
-    @property final inout(ProcessId) fatherId() inout const pure @nogc @safe nothrow
+    final inout(ProcessId) fatherId() inout const pure @nogc @safe nothrow
     {
         return this._fatherId;
     }
 
     /// Return father Process
-    @property final auto father() inout @safe
+    final auto father() inout @safe
     {
         return Scheduler.get().getProcessById(this._fatherId);
     }
 
     /// Returns if this process is orphan
-    @property final bool orphan() const pure @nogc @safe nothrow
+    final bool orphan() const pure @nogc @safe nothrow
     {
         return this._fatherId == 0;
     }
 
     /// Children processes ids
-    @property final inout(ProcessId[]) childrenIds() inout pure @nogc @safe nothrow
+    final inout(ProcessId[]) childrenIds() inout pure @nogc @safe nothrow
     {
         return this._childrenIds;
     }
 
     /// Children processes
-    @property final auto childrens() inout @safe
+    final auto childrens() inout @safe
     {
         return Scheduler.get().getProcessById(this._childrenIds);
     }
 
     /// Return process priority
-    @property final inout(int) priority() inout const pure @nogc @safe nothrow
+    final inout(int) priority() inout const pure @nogc @safe nothrow
     {
         return this._priority;
     }
 
     /// Changes process priority
-    @property final void priority(int priority)
+    final void priority(int priority)
     {
         if (priority != this.priority) {
             Scheduler.get().changeProcessPriority(this, this._priority, priority);
@@ -111,7 +111,7 @@ public:
     }
 
     /// Returns ptocess state
-    @property final ProcessState state() const pure @nogc @safe nothrow
+    final ProcessState state() const pure @nogc @safe nothrow
     {
         return this._state;
     }
@@ -140,7 +140,7 @@ public:
     }
 
     /// Returned value from the process when it ends
-    @property final int returnValue() const pure nothrow @safe
+    final int returnValue() const pure nothrow @safe
     {
         return this._return;
     }
@@ -186,35 +186,35 @@ package:
     }
 
     /// Devuelve el estado de la fibra
-    @property final Fiber.State fiberState()
+    final Fiber.State fiberState()
     {
         return this._fiber.state;
     }
 
     /// Changes the process Id
-    @property final void id(ProcessId id) pure @nogc @safe
+    final void id(ProcessId id) pure @nogc @safe
     {
         this._id = id;
     }
 
     /// Process Id of father process
-    @property final void fatherId(ProcessId fatherId) pure @nogc @safe
+    final void fatherId(ProcessId fatherId) pure @nogc @safe
     {
         this._fatherId = fatherId;
     }
     /// Children process ids
-    @property final void childrenIds(ProcessId[] childrenIds) pure @nogc @safe
+    final void childrenIds(ProcessId[] childrenIds) pure @nogc @safe
     {
         this._childrenIds = childrenIds;
     }
 
-    @property final void state(ProcessState state) @safe
+    final void state(ProcessState state) @safe
     {
         this._state = state;
     }
 
     /// Sets the returned value of the process when it ends.
-    @property final void returnValue(int returnValue)
+    final void returnValue(int returnValue)
     {
         this._return = returnValue;
     }
