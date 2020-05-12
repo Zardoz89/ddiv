@@ -28,5 +28,9 @@
 	"description": "DIV inspired 2d game engine",
 	"license": "MIT",
 	"name": "ddiv",
-	"targetPath": "bin"
+	"targetPath": "bin",
+    "toolchainRequirements": {
+        "dub": ">=1.20.0",
+        "frontend": ">=2.091"
+    }
 }
