@@ -25,32 +25,37 @@
 	},
 	"configurations": [
 		{
-            "name": "ddiv",
-            "targetType": "library"
-        },
+			"name": "ddiv",
+			"targetType": "library"
+		},
 		{
-			"dependencies": {
-				"silly": "~>1.0.2",
-				"beep": "~>0.0.2",
-				"pijamas": "~develop"
-			},
 			"name": "unittest",
-			"targetType": "library",
-			"importPaths": ["source", "tests"],
-            "sourcePaths": ["source", "tests"]
+			"dependencies": {
+				"beep": "~>0.0.2",
+				"pijamas": "~develop",
+				"silly": "~>1.0.2"
+			},
+			"importPaths": [
+				"source",
+				"tests"
+			],
+			"sourcePaths": [
+				"source",
+				"tests"
+			],
+			"targetType": "library"
 		}
 	],
 	"copyright": "Copyright © 2020, Luis Panadero Guardeño",
 	"dependencies": {
-		"bindbc-sdl": "~>0.16.0",
-		"stdx-allocator": "~>3.0.2"
+		"bindbc-sdl": "~>0.16.0"
 	},
 	"description": "DIV inspired 2d game engine",
 	"license": "MIT",
 	"name": "ddiv",
 	"targetPath": "bin",
-    "toolchainRequirements": {
-        "dub": ">=1.20.0",
-        "frontend": ">=2.091"
-    }
+	"toolchainRequirements": {
+		"dub": ">=1.20.0",
+		"frontend": ">=2.91.0"
+	}
 }
