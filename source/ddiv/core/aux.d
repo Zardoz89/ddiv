@@ -75,7 +75,7 @@ mixin template TlsSingleton()
 
 
 version(unittest) {
-    import beep;
+    import pijamas;
 
     // This two test classes can't be declared inside of unittest block
     class MySingleton
@@ -98,30 +98,30 @@ unittest {
 
     auto single = MySingleton.get();
     single.x = 3;
-    single.x.expect!equal(3);
-    MySingleton.get().x.expect!equal(3);
-    MySingleton.get().expect!equal(single);
+    single.x.should.be.equal(3);
+    MySingleton.get().x.should.be.equal(3);
+    MySingleton.get().should.be.equal(single);
 
     auto tls = MyLocalSingleton.get();
     tls.x = 42;
-    tls.x.expect!equal(42);
-    MyLocalSingleton.get().x.expect!equal(42);
-    MyLocalSingleton.get().expect!equal(tls);
+    tls.x.should.be.equal(42);
+    MyLocalSingleton.get().x.should.be.equal(42);
+    MyLocalSingleton.get().should.be.equal(tls);
 
     import core.thread.osthread : Thread;
 
     new Thread({
         MySingleton.get().x = 333;
-        single.x.expect!equal(333);
-        MySingleton.get().expect!equal(single);
+        single.x.should.be.equal(333);
+        MySingleton.get().should.be.equal(single);
 
         auto tls2 = MyLocalSingleton.get();
         tls2.x = 666;
-        tls2.x.expect!equal(666);
-        MyLocalSingleton.get().x.expect!equal(666);
+        tls2.x.should.be.equal(666);
+        MyLocalSingleton.get().x.should.be.equal(666);
         // tls is a diferent instance
-        (MyLocalSingleton.get() != tls).expect!true;
-        tls.x.expect!equal(42);
+        (MyLocalSingleton.get() != tls).should.be.True;
+        tls.x.should.be.equal(42);
     }).start();
 
 

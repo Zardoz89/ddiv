@@ -3,6 +3,18 @@
 		"Luis Panadero Guardeño"
 	],
 	"buildTypes": {
+		"docs": {
+			"buildOptions": [
+				"syntaxOnly"
+			],
+			"dflags": [
+				"-c",
+				"-Dddocs"
+			],
+			"dflags-dmd": [
+				"-preview=markdown"
+			]
+		},
 		"unittest-opt": {
 			"buildOptions": [
 				"inline",
@@ -13,11 +25,23 @@
 	},
 	"configurations": [
 		{
+			"name": "ddiv",
+			"targetType": "library"
+		},
+		{
+			"name": "unittest",
 			"dependencies": {
-				"beep": "~>0.0.2",
+				"pijamas": "~develop",
 				"silly": "~>1.0.2"
 			},
-			"name": "unittest",
+			"importPaths": [
+				"source",
+				"tests"
+			],
+			"sourcePaths": [
+				"source",
+				"tests"
+			],
 			"targetType": "library"
 		}
 	],
@@ -29,8 +53,8 @@
 	"license": "MIT",
 	"name": "ddiv",
 	"targetPath": "bin",
-    "toolchainRequirements": {
-        "dub": ">=1.20.0",
-        "frontend": ">=2.091"
-    }
+	"toolchainRequirements": {
+		"dub": ">=1.20.0",
+		"frontend": ">=2.91.0"
+	}
 }

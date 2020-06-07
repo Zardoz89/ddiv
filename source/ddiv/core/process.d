@@ -125,7 +125,7 @@ public:
      * This method it's called when the process yields the execution. The percent value, indicates how many work
      * has been completed. So, the default value of 100, indicates that has completed the 100% of the work for
      * this frame. A value of 400 (400%), indicates that the process has done 400% of the work, so it would be
-     * executed again in 4 frames. A value of 50 (50%, indicates that the process has done only 50% of the work, and it
+     * executed again in 4 frames. A value of 50 (50%), indicates that the process has done only 50% of the work, and it
      * would be executed again on this frame.
      */
     final void frame(uint percent = 100)

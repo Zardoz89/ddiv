@@ -166,7 +166,7 @@ public:
         this._actualPriority = int.min;
         auto process = this.nextProcessToBeExecuted();
         if (process !is null && process.state == ProcessState.HOLD) {
-            // Skips process with  _frame > 100 (this happens, for example, when frame(200) is called
+            // Skips process with  _frame >= 100 (this happens, for example, when frame(200) is called
             if (process._frame >= 100) {
                 process._frame -= 100;
                 process._executed = true;
