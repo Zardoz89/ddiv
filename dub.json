@@ -31,7 +31,6 @@
 		{
 			"name": "unittest",
 			"dependencies": {
-				"beep": "~>0.0.2",
 				"pijamas": "~develop",
 				"silly": "~>1.0.2"
 			},

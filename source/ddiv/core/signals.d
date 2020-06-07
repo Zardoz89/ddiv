@@ -91,7 +91,7 @@ void signal(Process p, Signal signal_)
 
 @("Signal processes - signal directly to a process")
 unittest {
-    import beep;
+    import pijamas;
 
     class MyProcess : Process {
         this(uint fatherId) {
@@ -103,29 +103,40 @@ unittest {
         }
     }
 
+    // given("A single process")
     auto p = new MyProcess(0);
-    p.state.expect!equal(ProcessState.HOLD);
-    signal(p, Signal.SLEEP);
-    p.state.expect!equal(ProcessState.SLEEP);
-    signal(p, Signal.FREEZE);
-    p.state.expect!equal(ProcessState.FREEZE);
-    signal(p, Signal.WAKEUP);
-    p.state.expect!equal(ProcessState.HOLD);
-    signal(p, Signal.KILL);
-    p.state.expect!equal(ProcessState.DEAD);
+    
+    // expect("Initial process state must be HOLD")
+    p.state.should.be.equal(ProcessState.HOLD);
 
-    // Signaling a dead process, must not change his state from dead. Ie, forbiden necromancy
+    // expect("Signaling SLEEP, changes state to sleep")
     signal(p, Signal.SLEEP);
-    p.state.expect!equal(ProcessState.DEAD);
+    p.state.should.be.equal(ProcessState.SLEEP);
+    
+    // expect("Signaling FREEZ, changes state to freeze")
     signal(p, Signal.FREEZE);
-    p.state.expect!equal(ProcessState.DEAD);
+    p.state.should.be.equal(ProcessState.FREEZE);
+    
+    // expect("Signaling WAKEUP, changes state to hold")
     signal(p, Signal.WAKEUP);
-    p.state.expect!equal(ProcessState.DEAD);
+    p.state.should.be.equal(ProcessState.HOLD);
+    
+    // expect("Signaling KILL, kills the process")
+    signal(p, Signal.KILL);
+    p.state.should.be.equal(ProcessState.DEAD);
+
+    // expect("Signaling a dead process, must not change his state from dead. Ie, forbiden necromancy")
+    signal(p, Signal.SLEEP);
+    p.state.should.be.equal(ProcessState.DEAD);
+    signal(p, Signal.FREEZE);
+    p.state.should.be.equal(ProcessState.DEAD);
+    signal(p, Signal.WAKEUP);
+    p.state.should.be.equal(ProcessState.DEAD);
 }
 
 @("Signal processes - process hierarchy")
 unittest {
-    import beep;
+    import pijamas;
     import std.algorithm : each;
 
     class MyProcess : Process {
@@ -150,67 +161,67 @@ unittest {
     */
 
     // Signals that ignores hierarchy
-    root.state.expect!equal(ProcessState.HOLD);
+    root.state.should.be.equal(ProcessState.HOLD);
 
     signal(root.id, Signal.SLEEP);
-    lvl1.each!(c => c.state.expect!equal(ProcessState.HOLD));
-    root.state.expect!equal(ProcessState.SLEEP);
+    lvl1.each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    root.state.should.be.equal(ProcessState.SLEEP);
 
     signal(root.id, Signal.FREEZE);
-    lvl1.each!(c => c.state.expect!equal(ProcessState.HOLD));
-    root.state.expect!equal(ProcessState.FREEZE);
+    lvl1.each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    root.state.should.be.equal(ProcessState.FREEZE);
 
     signal(root.id, Signal.WAKEUP);
-    lvl1.each!(c => c.state.expect!equal(ProcessState.HOLD));
-    root.state.expect!equal(ProcessState.HOLD);
+    lvl1.each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    root.state.should.be.equal(ProcessState.HOLD);
 
     // Signals that travels the hierarchy
     signal(root, Signal.SLEEP_TREE);
-    lvl1.each!(c => c.state.expect!equal(ProcessState.SLEEP));
-    lvl2.each!(c => c.state.expect!equal(ProcessState.SLEEP));
-    root.state.expect!equal(ProcessState.SLEEP);
+    lvl1.each!(c => c.state.should.be.equal(ProcessState.SLEEP));
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.SLEEP));
+    root.state.should.be.equal(ProcessState.SLEEP);
 
     signal(root, Signal.FREEZE_TREE);
-    lvl1.each!(c => c.state.expect!equal(ProcessState.FREEZE));
-    lvl2.each!(c => c.state.expect!equal(ProcessState.FREEZE));
-    root.state.expect!equal(ProcessState.FREEZE);
+    lvl1.each!(c => c.state.should.be.equal(ProcessState.FREEZE));
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.FREEZE));
+    root.state.should.be.equal(ProcessState.FREEZE);
 
     signal(root, Signal.WAKEUP_TREE);
-    lvl1.each!(c => c.state.expect!equal(ProcessState.HOLD));
-    lvl2.each!(c => c.state.expect!equal(ProcessState.HOLD));
-    root.state.expect!equal(ProcessState.HOLD);
+    lvl1.each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    root.state.should.be.equal(ProcessState.HOLD);
 
     signal(lvl1[0], Signal.SLEEP_TREE);
-    root.state.expect!equal(ProcessState.HOLD);
-    lvl1[1..$].each!(c => c.state.expect!equal(ProcessState.HOLD));
-    lvl2.each!(c => c.state.expect!equal(ProcessState.SLEEP));
-    lvl1[0].state.expect!equal(ProcessState.SLEEP);
+    root.state.should.be.equal(ProcessState.HOLD);
+    lvl1[1..$].each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.SLEEP));
+    lvl1[0].state.should.be.equal(ProcessState.SLEEP);
 
     signal(lvl1[1], Signal.FREEZE_TREE);
-    root.state.expect!equal(ProcessState.HOLD);
-    lvl1[0].state.expect!equal(ProcessState.SLEEP);
-    lvl1[1].state.expect!equal(ProcessState.FREEZE);
-    lvl1[2].state.expect!equal(ProcessState.HOLD);
-    lvl2.each!(c => c.state.expect!equal(ProcessState.SLEEP));
+    root.state.should.be.equal(ProcessState.HOLD);
+    lvl1[0].state.should.be.equal(ProcessState.SLEEP);
+    lvl1[1].state.should.be.equal(ProcessState.FREEZE);
+    lvl1[2].state.should.be.equal(ProcessState.HOLD);
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.SLEEP));
 
     // Signaling a direct signal to a father, don't affect childrens
     signal(lvl1[0], Signal.WAKEUP);
-    root.state.expect!equal(ProcessState.HOLD);
-    lvl1[0].state.expect!equal(ProcessState.HOLD);
-    lvl2.each!(c => c.state.expect!equal(ProcessState.SLEEP));
+    root.state.should.be.equal(ProcessState.HOLD);
+    lvl1[0].state.should.be.equal(ProcessState.HOLD);
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.SLEEP));
 
     // Killing a tree
     signal(lvl1[0], Signal.KILL_TREE);
-    root.state.expect!equal(ProcessState.HOLD);
-    lvl1[0].state.expect!equal(ProcessState.DEAD);
-    lvl2.each!(c => c.state.expect!equal(ProcessState.DEAD));
+    root.state.should.be.equal(ProcessState.HOLD);
+    lvl1[0].state.should.be.equal(ProcessState.DEAD);
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.DEAD));
 
     // Signaling a dead process, must not change his state from dead. Ie, forbiden necromancy
     signal(root, Signal.WAKEUP_TREE);
-    root.state.expect!equal(ProcessState.HOLD);
-    lvl1[0].state.expect!equal(ProcessState.DEAD);
-    lvl1[1..$].each!(c => c.state.expect!equal(ProcessState.HOLD));
-    lvl2.each!(c => c.state.expect!equal(ProcessState.DEAD));
+    root.state.should.be.equal(ProcessState.HOLD);
+    lvl1[0].state.should.be.equal(ProcessState.DEAD);
+    lvl1[1..$].each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    lvl2.each!(c => c.state.should.be.equal(ProcessState.DEAD));
 }
 
 
