@@ -1,6 +1,7 @@
 module ddiv.log.log;
 
 public import std.experimental.logger;
+import ddiv.log.patternfilelogger;
 
 /**
  * Configures the engine logger, reaplacing the default sharedLog by a multiLogger to stdout and to a file
@@ -13,8 +14,8 @@ void configLogger(string outputFile = "ddiv.log", LogLevel consoleLogLevel = Log
     import ddiv.log.consolelogger;
 
     auto multiLogger = new MultiLogger();
-    multiLogger.insertLogger("console", new ConsoleLogger(consoleLogLevel));
-    multiLogger.insertLogger("file", new FileLogger(outputFile, LogLevel.all));
+    multiLogger.insertLogger("console", new ConsoleLogger(consoleLogLevel, simplePattern));
+    multiLogger.insertLogger("file", new PatternFileLogger(outputFile, LogLevel.all, simplePattern));
 
     sharedLog = multiLogger;
 }
