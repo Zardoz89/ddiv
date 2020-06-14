@@ -307,6 +307,8 @@ if (__traits(isUnsigned, Key))
     /**
      * Try to insert an entry. If a previusly entry with the same key exists, then replaces it
      */
+     /+
+     // TODO Fix this - Does a seg fault!
     void insertOrReplace(Value)(const Key key, auto ref Value value)
     {
         if (!this.insert(key, value)) {
@@ -314,6 +316,7 @@ if (__traits(isUnsigned, Key))
             this.insert(key, value);
         }
     }
+    +/
 
     /**
 	 * Supports $(B key in aa) syntax.
