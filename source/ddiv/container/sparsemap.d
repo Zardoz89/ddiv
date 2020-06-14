@@ -165,7 +165,7 @@ if (__traits(isUnsigned, Key))
     }
 
     /// Inserts a new element into set
-    bool insert(const Key key, Value value) @safe
+    bool insert(Value)(const Key key, auto ref Value value) @safe
     {
         //  Corner cases, value must not be out of range, dense[] should not be full and value should not already be present
         if (key > this._maxKey) {
@@ -254,7 +254,7 @@ if (__traits(isUnsigned, Key))
     }
     
     /// Supports `aa[key] = value;` syntax.
-    void opIndexAssign(Value value, const Key key)
+    void opIndexAssign(Value)(auto ref Value value, const Key key)
     {
         this.insert(key, value);
     }
@@ -265,7 +265,7 @@ if (__traits(isUnsigned, Key))
      * 
 	 * Returns: false if the value was not present
 	 */
-    bool remove(Key key) nothrow pure @safe
+    bool remove(const Key key) nothrow pure @safe
     {
         if (this.length == 0) {
             return false;
