@@ -178,6 +178,31 @@ struct S
         map.search(0).should.be.equal(-1);
     }
 
+    // describe("Inserting a entry with the same key of a previusly existing entry of the map")
+    {
+        // given("An instance of map")
+        auto map = RefMap(16, 16);
+        map[3] = new C(10, 20);
+        map[5] = new C(12, 22);
+        map[1] = new C(100,50);
+        map[0] = new C(0,5);
+        map.length.should.be.equal(4);
+
+        // when("we try to insert over an existing key")
+        map.insert(3, new C(666, 666)).should.be.False;
+
+        // then("it leep the map intact")
+        map.length.should.be.equal(4);
+        map[3].should.be.equal(new C(10, 20));
+
+        // when("we try to replace it")
+        map.insertOrReplace(3, new C(666, 666));
+        
+        // then("the entry it's replaced")
+        map.length.should.be.equal(4);
+        map[3].should.be.equal(new C(666, 666));
+    }
+
     // describe("Obtaining the keys and values of this map, with a reference Value")
     {
         // given("A instance of map intialized with some values")
