@@ -166,6 +166,18 @@ if (__traits(isUnsigned, Key))
 
     /// Inserts a new element into set
     bool insert(Value)(const Key key, auto ref Value value) @safe
+    in
+    {
+        import std.traits : isPointer;
+        static if ( is(Value : Object) || isPointer!(Value)) {
+            assert(!(value is null));
+        }
+    }
+    out(r)
+    {
+        assert(this.dense.length == this.storage.length);
+    }
+    do
     {
         //  Corner cases, value must not be out of range, dense[] should not be full and value should not already be present
         if (key > this._maxKey) {
@@ -174,18 +186,15 @@ if (__traits(isUnsigned, Key))
         if (this.search(key) != -1) {
             return false;
         }
-        // Auto expand if we reach the max capacity
-        if (this.length >= this.capacity) {
-            this.reserve(growCapacity(this.capacity)); // grows by ~1.5 times
-        }
 
         static if (_sparseSortPolicy == SparseSortPolicy.None) {
+            // Mapping it to sparse[] array.
+            this.sparse[key] = this.dense.length;
+            
             // Inserting into array-dense[] at index 'n'. Ie, puts at the end of the array
             this.dense ~= key;
             this.storage ~= value;
 
-            // Mapping it to sparse[] array.
-            this.sparse[key] = this.dense.length - 1;
         } else static if (_sparseSortPolicy == SparseSortPolicy.ByKey) {
 
             if (this.length == 0) {
@@ -278,23 +287,16 @@ if (__traits(isUnsigned, Key))
         }
 
         static if (_sparseSortPolicy == SparseSortPolicy.None) {
-            if (denseIndex < this.length - 1) { // If isn't the last element
-                const temp = this.dense[$-1];  // Take an element from end
-                this.sparse[temp] = denseIndex; // Overwrite
-                this.dense[denseIndex] = temp;  // Overwrite
-
-                this.storage[denseIndex] = this.storage[$-1]; // We move the reference of the last element to the deleted value
-                import std.traits : isPointer;
-                static if ( is(Value : Object) || isPointer!(Value)) {
-                    this.storage[$-1] = null;
-                }
-            }
+            const temp = this.dense[$-1];  // Take an element from end 
+            this.dense[denseIndex] = temp;  // Overwrite. 
+            this.sparse[temp] = denseIndex; // Overwrite. 
+            this.storage[denseIndex] = this.storage[$-1]; // We move the reference of the last element to the deleted value
+            
             // We remove the last element that has been moved
             this.dense.length--;
             this.storage.length--;
 
         } else {
-            //this.sparse[this.dense[denseIndex]] = -1; // mark as invalid
             this.dense = this.dense[0..denseIndex] ~ this.dense[denseIndex+1..$];
             this.storage = this.storage[0..denseIndex] ~ this.storage[denseIndex+1..$];
 
@@ -307,8 +309,6 @@ if (__traits(isUnsigned, Key))
     /**
      * Try to insert an entry. If a previusly entry with the same key exists, then replaces it
      */
-     /+
-     // TODO Fix this - Does a seg fault!
     void insertOrReplace(Value)(const Key key, auto ref Value value)
     {
         if (!this.insert(key, value)) {
@@ -316,7 +316,6 @@ if (__traits(isUnsigned, Key))
             this.insert(key, value);
         }
     }
-    +/
 
     /**
 	 * Supports $(B key in aa) syntax.
