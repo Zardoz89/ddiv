@@ -46,6 +46,8 @@ struct SparseMap(Value, Key = uint, SparseSortPolicy _sparseSortPolicy = SparseS
     alias predicate = "a < b")
 if (__traits(isUnsigned, Key))
 {
+    private alias ThisSparseMap = typeof(this);
+
     private size_t[] sparse; // sparse[val] returns a index of dense
     private Key[] dense; // Contains the Keys
     private Value[] storage; // Contains the Value
@@ -57,7 +59,7 @@ if (__traits(isUnsigned, Key))
     /// No default constructor, as is necesary to give initial capacity and maxValue
     this() @disable;
 
-    /// Creates a SparseSet with a initial capacity and max value
+    /// Creates a SparseMap with a initial capacity and max value
     this(size_t _capacity, Key _maxKey = Key.max)
     in
     {
@@ -68,6 +70,15 @@ if (__traits(isUnsigned, Key))
     {
         this.maxKey(_maxKey);
         this.reserve(nextPower2(_capacity));
+    }
+
+    /// Creates a SparseMap from an associativeArray
+    this(Value[Key] associativeArray, Key _maxKey = Key.max)
+    {
+        this(associativeArray.length, _maxKey);
+        foreach(pair ; associativeArray.byKeyValue) {
+            this.insert(pair.key, pair.value);
+        }
     }
     
     ~this() @trusted
@@ -349,6 +360,14 @@ if (__traits(isUnsigned, Key))
 		return this.storage[0..this.length];
     }
 
+    /**
+     * Returns: a input range that contains all the pairs Key, Value in this map.
+     */
+    auto ref byKeyValue(this This)()
+    {
+        return PairKeyValueRange(this);
+    }
+
     /// Cleans the SparseSet
     void clean() nothrow @safe
     {
@@ -402,4 +421,60 @@ if (__traits(isUnsigned, Key))
         }
         return str ~ ")";
     }
+
+    /// InputRange of pairs of Key-Value
+    struct PairKeyValueRange
+    {
+        import std.typecons : Tuple;
+
+        alias Pair = Tuple!(Key, "key", Value, "value"); 
+
+        private Pair[] pairs;
+
+        /// Builds this, from a SparseMap
+        private this(ref ThisSparseMap sparseMap)
+        {
+            import std.range : iota;
+            const keys = sparseMap.keys;
+            auto values = sparseMap.values;
+            pairs.reserve(sparseMap.length);
+            foreach(i ; iota(sparseMap.length)) {
+                pairs ~= Pair(keys[i], values[i]);
+            }
+        }
+
+        /// Returns: is empty this InputRange
+        @property bool empty()
+        {
+            return this.pairs.length == 0;
+        }
+
+        /// Returns: the first value of this InputRange
+        @property Pair front()
+        {
+            return this.pairs[0];
+        }
+
+        /// Removes the front value of this InputRange
+        void popFront()
+        {
+            if (!this.empty) {
+                this.pairs = this.pairs[1..$];
+            }
+        }
+
+        /**
+         * Returns the first value of this InputRange and removes it
+         *
+         * Returns: the first value of this InputRange
+         */
+        Pair moveFront()
+        {
+            auto pair = this.front();
+            this.popFront();
+            return pair;
+        }
+
+    }
+
 }

@@ -233,7 +233,7 @@ struct S
 
     // describe("Obtaining the keys and values of this map, with not reference Value")
     {
-        // given("A instance of map")
+        // given("An instance of map")
         auto map = ValMap(16, 16);
         map[10] = S(0, 1);
         map[3] = S(1, 2);
@@ -252,6 +252,41 @@ struct S
         map[10].should.be.equal(S(33, 1));
     }
     
+    // describe("Obtaining all the Key-Value pairs and using it to iterate")
+    {
+        // given("An instance of map")
+        auto map = ValMap(16, 16);
+        map[10] = S(0, 1);
+        map[3] = S(1, 2);
+        map[0] = S(123, 666);
+
+        // when("we get a range of Key-Value pairs")
+        auto pairs = map.byKeyValue;
+
+        // then("Must be not empty")
+        pairs.empty.should.be.False;
+
+        // and("Contain all the Key-Value pairs")
+        pairs.front[0].should.be.equal(10);
+        pairs.front[1].should.be.equal(S(0, 1));
+        pairs.popFront;
+
+        pairs.front.key.should.be.equal(3);
+        pairs.front.value.should.be.equal(S(1, 2));
+        pairs.popFront;
+        
+        auto pair = pairs.moveFront;
+        pair[0].should.be.equal(0);
+        pair[1].should.be.equal(S(123, 666));
+        
+        // then("Must be empty")
+        pairs.empty.should.be.True;
+
+        // and("Trying to use again front, must throw an exception")
+        import core.exception : RangeError;
+        should(() {pairs.popFront;}).not.Throw!RangeError;
+        should(() {pairs.front;}).Throw!RangeError;
+    }
 }
 
 @("SparseMap Sorted ByKey")
@@ -409,10 +444,12 @@ struct S
     // describe("Obtaining the keys and values of this map, with not reference Value")
     {
         // given("A instance of map")
-        auto map = ValMap(16, 16);
-        map[0] = S(123, 666);
-        map[10] = S(0, 0);
-        map[3] = S(1, 2);
+        S[uint] aa = [
+            10: S(0, 0),
+            3: S(1, 2),
+            0: S(123, 666)
+        ];
+        auto map = ValMap(aa, 16);
 
         // expect("we get an array of the keys of the map sorted")
         auto keys = map.keys;
@@ -428,6 +465,43 @@ struct S
         map[10].should.be.equal(S(0, 0));
     }
     
+    // describe("Obtaining all the Key-Value pairs and using it to iterate")
+    {
+        // given("An instance of map")
+        S[uint] aa = [
+            10: S(0, 1),
+            3: S(1, 2),
+            0: S(123, 666)
+        ];
+        auto map = ValMap(aa, 16);
+
+        // when("we get a range of Key-Value pairs")
+        auto pairs = map.byKeyValue;
+
+        // then("Must be not empty")
+        pairs.empty.should.be.False;
+
+        // and("Contain all the Key-Value pairs on the expected order")
+        pairs.front[0].should.be.equal(0);
+        pairs.front[1].should.be.equal(S(123, 666));
+        pairs.popFront;
+
+        pairs.front.key.should.be.equal(3);
+        pairs.front.value.should.be.equal(S(1, 2));
+        pairs.popFront;
+        
+        auto pair = pairs.moveFront;
+        pair[0].should.be.equal(10);
+        pair[1].should.be.equal(S(0, 1));
+        
+        // then("Must be empty")
+        pairs.empty.should.be.True;
+
+        // and("Trying to use again front, must throw an exception")
+        import core.exception : RangeError;
+        should(() {pairs.popFront;}).not.Throw!RangeError;
+        should(() {pairs.front;}).Throw!RangeError;
+    }
 }
 
 @("SparseMap Sorted ByValue")
@@ -600,5 +674,43 @@ struct S
         // and("If try to modify a value, then it must be changed on the containter")
         values[0].x = 33;
         map[10].should.be.equal(S(33, 1));
+    }
+
+    // describe("Obtaining all the Key-Value pairs and using it to iterate")
+    {
+        // given("An instance of map")
+        S[uint] aa = [
+            10: S(0, 1),
+            3: S(1, 2),
+            0: S(123, 666)
+        ];
+        auto map = ValMap(aa, 16);
+
+        // when("we get a range of Key-Value pairs")
+        auto pairs = map.byKeyValue;
+
+        // then("Must be not empty")
+        pairs.empty.should.be.False;
+
+        // and("Contain all the Key-Value pairs on the expected order")
+        pairs.front[0].should.be.equal(10);
+        pairs.front[1].should.be.equal(S(0, 1));
+        pairs.popFront;
+
+        pairs.front.key.should.be.equal(3);
+        pairs.front.value.should.be.equal(S(1, 2));
+        pairs.popFront;
+        
+        auto pair = pairs.moveFront;
+        pair[0].should.be.equal(0);
+        pair[1].should.be.equal(S(123, 666));
+        
+        // then("Must be empty")
+        pairs.empty.should.be.True;
+
+        // and("Trying to use again front, must throw an exception")
+        import core.exception : RangeError;
+        should(() {pairs.popFront;}).not.Throw!RangeError;
+        should(() {pairs.front;}).Throw!RangeError;
     }
 }    
