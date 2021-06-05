@@ -30,8 +30,8 @@
 		},
 		{
 			"dependencies": {
-				"pijamas": "~develop",
-				"silly": "~>1.0.2"
+				"pijamas": "~>1.0",
+				"silly": "~>1.1"
 			},
 			"importPaths": [
 				"source",
@@ -47,8 +47,8 @@
 	],
 	"copyright": "Copyright © 2020, Luis Panadero Guardeño",
 	"dependencies": {
-		"bindbc-sdl": "~>0.16.0",
-		"extendedlogger": "~>0.1.0"
+		"bindbc-sdl": "~>0.21",
+		"extendedlogger": "~>1.0"
 	},
 	"description": "DIV inspired 2d game engine",
 	"license": "MIT",
