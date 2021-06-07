@@ -50,6 +50,7 @@ public:
         this(fatherId, 0, 0);
     }
 
+    /// Creates a DDiv Process with a preassigned ID and priority
     protected this(uint fatherId, uint id = 0, int priority = 0)
     {
         this._fiber = new Fiber(&runner);
@@ -157,6 +158,11 @@ public:
         return this._id == this._id;
     }
 
+    override size_t toHash() const pure nothrow @safe
+    {
+        return this._id.hashOf();
+    }
+
     override string toString() const pure
     {
         import std.conv : to;
@@ -178,7 +184,7 @@ public:
 
 package:
 
-    /// Contine con la ejecución de este proceso
+    /// Continues with the execution of this process
     final void call()
     {
         this._state = ProcessState.RUNNING;
@@ -227,7 +233,7 @@ protected:
 private:
 
     /// Wrapper around run() to assign the returned value
-    final void runner()
+    void runner()
     {
         scope(exit) {
             this._state = ProcessState.DEAD;

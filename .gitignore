@@ -44,8 +44,6 @@ build/*
 bin/*
 .directory
 
-.vscode/
-
 .idea/
 classes/
 ddiv.iml

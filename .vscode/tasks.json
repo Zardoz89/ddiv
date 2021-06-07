@@ -1,0 +1,71 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "dub",
+			"test": true,
+			"cwd": "${workspaceFolder}",
+			"compiler": "dmd",
+			"archType": "x86_64",
+			"buildType": "unittest",
+			"configuration": "unittest",
+			"_generated": true,
+			"problemMatcher": [
+				"$dmd"
+			],
+			"group": "test",
+			"label": "Dub run tests",
+			"detail": "dub test --compiler=dmd -a=x86_64 -b=unittest -c=unittest"
+		},
+		{
+			"type": "dub",
+			"run": false,
+			"cwd": "${workspaceFolder}",
+			"force": true,
+			"compiler": "dmd",
+			"archType": "x86_64",
+			"buildType": "debug",
+			"configuration": "ddiv",
+			"_generated": true,
+			"problemMatcher": [
+				"$dmd"
+			],
+			"group": "build",
+			"label": "Dub rebuild ddiv",
+			"detail": "dub build --force --compiler=dmd -a=x86_64 -b=debug -c=ddiv"
+		},
+		{
+			"type": "dub",
+			"run": false,
+			"test": true,
+			"cwd": "${workspaceFolder}",
+			"compiler": "dmd",
+			"archType": "x86_64",
+			"buildType": "unittest",
+			"configuration": "unittest",
+			"_generated": true,
+			"problemMatcher": [
+				"$dmd"
+			],
+			"group": "build",
+			"label": "Dub build ddiv tests",
+			"detail": "dub build --compiler=dmd -a=x86_64 -b=unittest -c=unittest"
+		},
+		{
+			"type": "dub",
+			"run": false,
+			"cwd": "${workspaceFolder}",
+			"compiler": "dmd",
+			"archType": "x86_64",
+			"buildType": "debug",
+			"configuration": "ddiv",
+			"_generated": true,
+			"problemMatcher": [
+				"$dmd"
+			],
+			"group": "build",
+			"label": "Dub build ddiv",
+			"detail": "dub build --compiler=dmd -a=x86_64 -b=debug -c=ddiv"
+		}
+	]
+}

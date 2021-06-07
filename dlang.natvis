@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="slice&lt;*&gt;">
+    <AlternativeType Name="dArray" />
+    <DisplayString>{{length={length}}}</DisplayString>
+    <Expand>
+        <Item Name="length">length</Item>
+        <ArrayItems>
+            <Size>length</Size>
+            <ValuePointer>pttr</ValuePointer>
+        </ArrayItems>
+    </Expand>
+    </Type>
+    <Type Name="associative_array&lt;*, *&gt;">
+    <AlternativeType Name="dAssocArray" />
+    <!--
+        buckets.length  -> size_t   -> 4:8  -> 0
+        buckets.ptr     -> void*    -> 4:8  -> sizeof(size_t)
+        used            -> uint     -> 4    -> sizeof(size_t) * 2
+        deleted         -> uint     -> 4    -> sizeof(size_t) * 2 + 4
+        entryTI         -> void*    -> 4:8  -> sizeof(size_t) * 2 + 8
+        firstUsed       -> uint     -> 4    -> sizeof(size_t) * 3 + 8
+        keysz           -> uint     -> 4    -> sizeof(size_t) * 3 + 12
+        valsz           -> uint     -> 4    -> sizeof(size_t) * 3 + 16
+        valoff          -> uint     -> 4    -> sizeof(size_t) * 3 + 20
+        flags           -> ubyte    -> 1    -> sizeof(size_t) * 3 + 24
+    -->
+    <!--
+        hash            -> size_t   -> 4:8  -> 0
+        entry           -> void*    -> 4:8  -> sizeof(size_t)
+    -->
+    <DisplayString>{{length={*(unsigned __int32 *)((char *)ptr + sizeof(size_t) * 2) - *(unsigned __int32 *)((char *)ptr + sizeof(size_t) * 2 + 4)}}}</DisplayString>
+    <Expand>
+        <CustomListItems>
+            <Variable Name="index" InitialValue="0" />
+            <Variable Name="length" InitialValue="*(size_t *)((char *)ptr + 0)" />
+            <Variable Name="pRoot" InitialValue="*(char **)((char *)ptr + sizeof(size_t))" />
+
+            <Size>*(unsigned __int32 *)((char *)ptr + sizeof(size_t) * 2) - *(unsigned __int32 *)((char *)ptr + sizeof(size_t) * 2 + 4)</Size>
+            <Loop>
+                <Break Condition="index == length" /> 
+                <If Condition="(__key_t *)(*(char **)(pRoot + sizeof(size_t) * 2 * index + sizeof(size_t))) != nullptr">
+                    <Item Name="[{*(__key_t *)(*(char **)(pRoot + sizeof(size_t) * 2 * index + sizeof(size_t)))}]">*(__val_t *)(*(char **)(pRoot + sizeof(size_t) * 2 * index + sizeof(size_t)) + sizeof(__key_t))</Item>  
+                </If>
+                <Exec>index++</Exec>
+            </Loop>
+        </CustomListItems>
+    </Expand>
+    </Type>
+</AutoVisualizer>
