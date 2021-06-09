@@ -6,7 +6,10 @@ module ddiv.core.scheduler;
 import core.thread.fiber;
 import ddiv.core.process;
 import ddiv.core.aux;
+import ddiv.core.idmanager : IdManager;
+import ddiv.core.mainprocess : MainProcess;
 
+public import ddiv.core.idmanager : ProcessId, ROOT_ID, ORPHAN_FATHER_ID, UNINITIALIZED_ID;
 /*
 Pseudocode idea from DIV source :
 
@@ -69,22 +72,34 @@ private:
     /// PriorityQueue (BinaryHeap) that stores the process ordered by his priority
     PriorityQueue!(int, Process) _processes;
     /// Associative array to the process by his Id
-    Process[uint] _processesById;
+    Process[ProcessId] _processesById;
     /// Actual priority level being executed
     int _actualPriority;
     /// Has all remaning processes executed on this frame ?
     bool _hasRemainingProcessesToExecute;
+    IdManager idManager;
 
 package:
+    final this()
+    {
+        this.idManager.initialize();
+    }
+    
+    final ~this()
+    {
+        this.idManager.deinitialize();
+    }
+
     /// Register a process on the scheduler
     void registerProcess(Process process)
     {
-        process.id = process.id == 0 ? this.generateNewId() : process.id;
+        if (process.id == UNINITIALIZED_ID) {
+            process.id = this.idManager.getNewId();
+        }
 
-        // TODO Handle when the pre-exising process.id is being reused by another process
         this._processes.insert(process.priority, process);
         this._processesById[process.id] = process;
-        if (process.fatherId != 0) {
+        if (process.fatherId != ORPHAN_FATHER_ID) {
             auto father = this._processesById[process.fatherId];
             auto childrens = father.childrenIds;
             childrens ~= process.id;
@@ -111,7 +126,7 @@ package:
             }
         }
 
-        if (process.fatherId != 0) {
+        if (process.fatherId != ORPHAN_FATHER_ID) {
             // Remove process from father childrenIds
             import std.algorithm : remove;
             auto father = this._processesById[process.fatherId];
@@ -122,6 +137,7 @@ package:
         // Finally we remove the process from the priority queue and from the associative array
         this._processes.remove(process.priority, process);
         this._processesById.remove(process.id);
+        this.idManager.freeId(process.id);
     }
 
     /// Updates the priority queue with a change of priority
@@ -181,13 +197,13 @@ public:
     {
         this._processes.length = 0;
         this._processesById.clear;
+        this.idManager.resetIds();
     }
 
     /// Return a process object by his id, or null if it not exists
-    auto getProcessById(const uint id) pure @safe
+    Process getProcessById(const uint id) @trusted
     {
-        return this._processesById.get(id, null);
-
+        return this._processesById[id];
     }
 
     /// Returns a range of process objects
@@ -208,17 +224,6 @@ public:
     }
 
 private:
-    /// Generates a random process Id that isn't registered
-    uint generateNewId()
-    {
-        import std.random : uniform;
-        uint id;
-        // TODO Contemplate what happens when the number of total processes are near int.max
-        do {
-            id = uniform(1, uint.max);
-        } while ((id in _processesById) !is null);
-        return id;
-    }
 
     Process nextProcessToBeExecuted()
     {

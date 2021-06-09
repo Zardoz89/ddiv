@@ -32,7 +32,7 @@ class Process
 private:
     Fiber _fiber;
     ProcessState _state = ProcessState.HOLD;
-    ProcessId _id = 0; // Process ID
+    ProcessId _id = UNINITIALIZED_ID; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
     ProcessId _fatherId; // Father process Id. if is 0, it's orphan
@@ -47,11 +47,11 @@ public:
     /// Creates a DDiv Process
     this(ProcessId fatherId)
     {
-        this(fatherId, 0, 0);
+        this(fatherId, UNINITIALIZED_ID, 0);
     }
 
     /// Creates a DDiv Process with a preassigned ID and priority
-    protected this(uint fatherId, uint id = 0, int priority = 0)
+    protected this(uint fatherId, uint id = UNINITIALIZED_ID, int priority = 0)
     {
         this._fiber = new Fiber(&runner);
         this._fatherId = fatherId;

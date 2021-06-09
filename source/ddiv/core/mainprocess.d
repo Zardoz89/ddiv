@@ -14,8 +14,9 @@ class MainProcess : Process
     this(string[] args)
     {
         this._args = args;
+        Scheduler.get().reset(); // Work around
         // Orphan, id 1, and max priorty
-        super(0, 1, int.max);
+        super(ORPHAN_FATHER_ID, ROOT_ID, int.max);
     }
 
     /// Executes the main loop. Only finishs when all remaning processes has die or an exception is throw
