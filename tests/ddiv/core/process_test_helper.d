@@ -19,7 +19,7 @@ void executeSchedulerNframes(uint totalFrames)
         debug(ProcessTestStdout) {
             import std.stdio : writeln;
             try {
-                writeln("frame=", frames);
+                writeln("frame=", frame);
             } catch (Exception ex) {}
         }
     }

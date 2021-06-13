@@ -26,6 +26,7 @@ unittest {
             this.orphan.should.be.True; // Main process is orphan always
 
             debug(ProcessTestStdout) {
+                import std.stdio : writeln;
                 writeln("I'm main! ");
             }
             auto myP = new MyProcess!(100, 4)(this.id);

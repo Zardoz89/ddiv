@@ -2,6 +2,7 @@ module ddiv.core.mainprocess;
 
 import ddiv.core.process;
 import ddiv.core.scheduler;
+import ddiv.core.aux;
 
 /// Initial process
 class MainProcess : Process
@@ -26,6 +27,16 @@ class MainProcess : Process
             this.doFrame();
         } while(!Scheduler.get().empty);
     }
+    
+    /*
+    override string toString()
+    {
+        import std.conv : to;
+        return to!string([ __traits(allMembers, MainProcess) ]);
+    }
+    */
+
+    mixin ToString!MainProcess;
 
 protected:
     final override int run()

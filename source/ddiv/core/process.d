@@ -4,7 +4,9 @@ Process implemented over Fibers
 module ddiv.core.process;
 
 import core.thread.fiber;
+//import jdiutil;
 import ddiv.core.scheduler;
+import ddiv.core.aux;
 
 /// Id of a process
 alias ProcessId = uint;
@@ -30,20 +32,20 @@ enum ProcessState : ubyte {
 class Process
 {
 private:
+    ProcessId _id = UNINITIALIZED_ID; // Process ID
+    @NoString
     Fiber _fiber;
     ProcessState _state = ProcessState.HOLD;
-    ProcessId _id = UNINITIALIZED_ID; // Process ID
     int _priority = 0; // Process priority
     int _return; // Return value
     ProcessId _fatherId; // Father process Id. if is 0, it's orphan
-    ProcessId[] _childrenIds; // Chuildren process Ids
+    ProcessId[] _childrenIds; // Children process Ids
 
 package:
     uint _frame = 0; /// Actual frame percent value
     bool _executed = 0; /// Has been totally (100%) executed on this frame ?
 
 public:
-
     /// Creates a DDiv Process
     this(ProcessId fatherId)
     {
@@ -162,25 +164,8 @@ public:
     {
         return this._id.hashOf();
     }
-
-    override string toString() const pure
-    {
-        import std.conv : to;
-        import ddiv.core.aux : baseName;
-        string str = this.classinfo.baseName ~ "[" ~ to!string(this._id)
-            ~ ", _executed=" ~ to!string(this._executed)
-            ~ ", _frame=" ~ to!string(this._frame)
-            ~ ", state=" ~ to!string(this.state);
-            //~ ", fstate=" ~ to!string(this._fiber.state);
-        if (this.orphan) {
-            str ~= ", orphan";
-        } else {
-            str ~= ", fatherId=" ~ to!string(this._fatherId);
-        }
-        str ~= ", childrenIds=" ~ to!string(this._childrenIds)
-            ~ "]";
-        return str;
-    }
+    
+    mixin ToString!Process;
 
 package:
 
