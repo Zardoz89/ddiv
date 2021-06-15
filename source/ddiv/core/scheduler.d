@@ -5,11 +5,12 @@ module ddiv.core.scheduler;
 
 import core.thread.fiber;
 import ddiv.core.process;
-import ddiv.core.aux;
+import ddiv.core.patterns;
 import ddiv.core.idmanager : IdManager;
 import ddiv.core.mainprocess : MainProcess;
 
 public import ddiv.core.idmanager : ProcessId, ROOT_ID, ORPHAN_FATHER_ID, UNINITIALIZED_ID;
+
 /*
 Pseudocode idea from DIV source :
 
@@ -60,11 +61,9 @@ process.frame(int f = 100):
 
 */
 
-
 /// Process Scheduler inspired by DIV process scheduler
-final class Scheduler
-{
-    mixin TlsSingleton;
+final class Scheduler {
+    mixin Singleton;
 
 private:
     import ddiv.container : PriorityQueue;
@@ -80,19 +79,16 @@ private:
     IdManager idManager;
 
 package:
-    final this()
-    {
+    final this() {
         this.idManager.initialize();
     }
-    
-    final ~this()
-    {
+
+    final ~this() {
         this.idManager.deinitialize();
     }
 
     /// Register a process on the scheduler
-    void registerProcess(Process process)
-    {
+    void registerProcess(Process process) {
         if (process.id == UNINITIALIZED_ID) {
             process.id = this.idManager.getNewId();
         }
@@ -108,12 +104,12 @@ package:
     }
 
     /// Unregisters a process on the scheduler
-    void unregisterProcess(Process process)
-    {
+    void unregisterProcess(Process process) {
         if (process.childrenIds.length > 0) {
             import std.algorithm : each;
+
             // change children father to the father of this process
-            foreach(children ; process.childrens) {
+            foreach (children; process.childrens) {
                 children.fatherId = process.fatherId;
             }
             // add this process childrens to the father childrens
@@ -129,6 +125,7 @@ package:
         if (process.fatherId != ORPHAN_FATHER_ID) {
             // Remove process from father childrenIds
             import std.algorithm : remove;
+
             auto father = this._processesById[process.fatherId];
             auto childrens = father.childrenIds;
             father.childrenIds = childrens.remove!(id => id == process.id);
@@ -141,16 +138,14 @@ package:
     }
 
     /// Updates the priority queue with a change of priority
-    void changeProcessPriority(Process process, int oldPriority, int newPriority)
-    {
+    void changeProcessPriority(Process process, int oldPriority, int newPriority) {
         this._processes.remove(oldPriority, process);
         this._processes.insert(newPriority, process);
     }
 
 public:
     /// Prepare all processes for the next frame
-    void prepareProcessesToBeExecuted()
-    {
+    void prepareProcessesToBeExecuted() {
         foreach (pair; this._processes) {
             auto process = pair[1];
             if (process.fiberState == Fiber.State.HOLD) {
@@ -161,8 +156,7 @@ public:
     }
 
     /// Delete all dead processes
-    void deleteDeadProcess()
-    {
+    void deleteDeadProcess() {
         foreach (pair; this._processes) {
             auto process = pair[1];
             if (process.state == ProcessState.DEAD || process.fiberState == Fiber.State.TERM) {
@@ -171,11 +165,11 @@ public:
         }
     }
 
-    void executeNextProcess()
-    {
-        debug(ShowProcessIds) {
+    void executeNextProcess() {
+        debug (ShowProcessIds) {
             import std.algorithm : map;
             import ddiv.log;
+
             trace(this._processes.map!(p => p.value.id));
         }
 
@@ -193,40 +187,35 @@ public:
     }
 
     /// Removes all processes on the scheduler
-    void reset()
-    {
+    void reset() {
         this._processes.length = 0;
         this._processesById.clear;
         this.idManager.resetIds();
     }
 
     /// Return a process object by his id, or null if it not exists
-    Process getProcessById(const uint id) @trusted
-    {
+    Process getProcessById(const uint id) @trusted {
         return this._processesById[id];
     }
 
     /// Returns a range of process objects
-    auto getProcessById(const uint[] ids) pure @safe
-    {
+    auto getProcessById(const uint[] ids) pure @safe {
         import std.algorithm : map;
-        return ids.map!( id => this.getProcessById(id));
+
+        return ids.map!(id => this.getProcessById(id));
     }
 
-    bool hasProcessesToExecute() pure @nogc @safe
-    {
+    bool hasProcessesToExecute() pure @nogc @safe {
         return this._hasRemainingProcessesToExecute && !this.empty;
     }
 
-    bool empty() pure @nogc @safe
-    {
+    bool empty() pure @nogc @safe {
         return this._processes.empty();
     }
 
 private:
 
-    Process nextProcessToBeExecuted()
-    {
+    Process nextProcessToBeExecuted() {
         foreach (pair; this._processes) {
             auto process = pair[1];
             if (process.state == ProcessState.HOLD && process.fiberState == Fiber.State.HOLD && !process._executed
@@ -240,3 +229,6 @@ private:
     }
 }
 
+shared static ~this() {
+    Scheduler.get().destroy();
+}

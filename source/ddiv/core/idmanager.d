@@ -11,7 +11,6 @@ public alias UNINITIALIZED_ID = ORPHAN_FATHER_ID;
 
 private const FREE_IDS_ARRAY_BLQ_SIZE = 16 * 1024; // 16 KiB
 private const ProcessId START_ID = 2;
-import ddiv.core.mallocator;
 import ddiv.container.stack;
 
 /**
@@ -27,45 +26,40 @@ import ddiv.container.stack;
  */
 public struct IdManager {
     private ProcessId _nextId = UNINITIALIZED_ID;
-    private SimpleStack!ProcessId freeIds = void;
+    private SimpleStack!ProcessId freeIds;
     private bool _initialized = false;
 
-    void initialize() @nogc @trusted nothrow
-    {
-        if (! this._initialized) {
+    void initialize() @nogc @trusted nothrow {
+        if (!this._initialized) {
             this._nextId = START_ID;
-            this.freeIds = SimpleStack!ProcessId(FREE_IDS_ARRAY_BLQ_SIZE);
+            this.freeIds.reserve(FREE_IDS_ARRAY_BLQ_SIZE);
             this._initialized = true;
         }
     }
 
-    void deinitialize() @nogc @trusted nothrow
-    {
+    void deinitialize() @nogc @trusted nothrow {
         if (this._initialized) {
             this._nextId = UNINITIALIZED_ID;
-            this.freeIds.clear();
+            this.freeIds.free();
             this._initialized = false;
         }
     }
 
     /// Resets the Id manager, setting the conter to 0, and cleaning the release ids stack.
-    void resetIds() @nogc @trusted nothrow
-    {
+    void resetIds() @nogc @trusted nothrow {
         this._nextId = START_ID;
         this.freeIds.clear();
     }
 
     /// Generates the new Id
-    ProcessId getNewId() @nogc @trusted nothrow
-    {
+    ProcessId getNewId() @nogc @trusted nothrow {
         if (this.freeIds.length > 0) {
             return this.freeIds.pop();
         }
         return this._nextId++;
     }
 
-    bool existsId(ProcessId id) @nogc @trusted nothrow
-    {
+    bool existsId(ProcessId id) @nogc @trusted nothrow {
         if (id >= this._nextId) {
             return false;
         }
@@ -73,28 +67,27 @@ public struct IdManager {
     }
 
     /// Release an used Id
-    void freeId(ProcessId id) @nogc @trusted nothrow
-    {
+    void freeId(ProcessId id) @nogc @trusted nothrow {
         if (this.existsId(id)) {
             this.freeIds.push(id);
         }
     }
 
-    void optimize() @nogc @trusted nothrow
-    {
+    void optimize() @nogc @trusted nothrow {
         // TODO
         // Sort freeIds and try to shrink _nextId if there is a block of contigous free ids that it's contigous to _nextId ?
     }
 }
 
-
 @("Id manager generation and release of Ids")
-unittest
-{
+unittest {
     import pijamas;
+
     IdManager idManager;
     idManager.initialize();
-    scope(exit) idManager.deinitialize();
+    scope (exit) {
+        idManager.deinitialize();
+    }
 
     auto id = idManager.getNewId();
     id.should.be.equal(START_ID);
@@ -124,18 +117,18 @@ unittest
     idManager.freeId(999);
     idManager.getNewId().should.be.equal(5);
     idManager.getNewId().should.be.equal(3);
-    
+
     idManager.resetIds();
 
     // Stress test
     ProcessId[] usedIds;
-    foreach(i ; 0 .. (FREE_IDS_ARRAY_BLQ_SIZE*2)) {
+    foreach (i; 0 .. (FREE_IDS_ARRAY_BLQ_SIZE * 2)) {
         usedIds ~= idManager.getNewId();
     }
-    usedIds.should.have.length(FREE_IDS_ARRAY_BLQ_SIZE*2);
-    foreach(idToFree ; usedIds) {
+    usedIds.should.have.length(FREE_IDS_ARRAY_BLQ_SIZE * 2);
+    foreach (idToFree; usedIds) {
         idManager.freeId(idToFree);
     }
     idManager.freeIds.length.should.be.equal(usedIds.length);
-    idManager.getNewId().should.be.equal(FREE_IDS_ARRAY_BLQ_SIZE*2 + 1 );
+    idManager.getNewId().should.be.equal(FREE_IDS_ARRAY_BLQ_SIZE * 2 + 1);
 }

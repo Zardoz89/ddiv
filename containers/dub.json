@@ -1,11 +1,4 @@
 {
-    "description": "DIV inspired 2d game engine",
-    "license": "MIT",
-    "name": "ddiv",
-    "authors": [
-        "Luis Panadero Guardeño"
-    ],
-    "copyright": "Copyright © 2020, Luis Panadero Guardeño",
     "dflags": ["-preview=dip1008"],
     "buildTypes": {
         "docs": {
@@ -30,10 +23,11 @@
     },
     "configurations": [
         {
-            "name": "ddiv",
+            "name": "containers",
             "targetType": "library"
         },
         {
+            "name": "unittest",
             "dependencies": {
                 "pijamas": "~>1",
                 "silly": "~>1.2.0-dev.1"
@@ -42,26 +36,21 @@
                 "source",
                 "tests"
             ],
-            "name": "unittest",
             "sourcePaths": [
                 "source",
                 "tests"
             ],
-            "targetType": "library"
+            "targetType": "library",
+            "targetPath": "bin"
         }
     ],
     "dependencies": {
-        "ddiv:core": "*",
-        "ddiv:containers": "*",
-        "bindbc-sdl": "~>0.21",
-        "ikod-containers": "~>0.0.20",
-        "extendedlogger": "~>1"
+        "ddiv:core": {"path": "../"},
+        "ikod-containers": "~>0.0.20"
     },
-    "targetPath": "bin",
-    "subPackages": [
-        "./core/",
-        "./containers/"
-    ],
+    "description": "Containers",
+    "license": "MIT",
+    "name": "containers",
     "toolchainRequirements": {
         "dub": ">=1.20.0",
         "frontend": ">=2.91.0"

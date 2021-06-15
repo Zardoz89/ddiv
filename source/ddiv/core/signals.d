@@ -6,7 +6,6 @@ module ddiv.core.signals;
 import ddiv.core.process;
 import ddiv.core.scheduler;
 
-
 /// Signals to send to a process
 enum Signal : ubyte {
     /// kills a process. It wouldn't be executed on this frame, and removed on the next frame
@@ -27,22 +26,19 @@ enum Signal : ubyte {
     WAKEUP_TREE
 }
 
-void signal(uint id, Signal signal_)
-{
+void signal(uint id, Signal signal_) {
     auto p = Scheduler.get().getProcessById(id);
     signal(p, signal_);
 }
 
-void signal(Process p, Signal signal_)
-{
+void signal(Process p, Signal signal_) {
     // We can signal no exising processes or a dead process
     if (p is null || p.state == ProcessState.DEAD) {
         return;
     }
 
-    void signalTree(Process p, Signal signal_)
-    {
-        foreach (child ; p.childrens) {
+    void signalTree(Process p, Signal signal_) {
+        foreach (child; p.childrens) {
             if (child is null) {
                 continue;
             }
@@ -51,41 +47,41 @@ void signal(Process p, Signal signal_)
     }
 
     final switch (signal_) {
-        case Signal.KILL:
-            p.state = ProcessState.DEAD;
-            break;
+    case Signal.KILL:
+        p.state = ProcessState.DEAD;
+        break;
 
-        case Signal.SLEEP:
-            p.state = ProcessState.SLEEP;
-            break;
+    case Signal.SLEEP:
+        p.state = ProcessState.SLEEP;
+        break;
 
-        case Signal.FREEZE:
-            p.state = ProcessState.FREEZE;
-            break;
+    case Signal.FREEZE:
+        p.state = ProcessState.FREEZE;
+        break;
 
-        case Signal.WAKEUP:
-            p.state = ProcessState.HOLD;
-            break;
+    case Signal.WAKEUP:
+        p.state = ProcessState.HOLD;
+        break;
 
-        case Signal.KILL_TREE:
-            p.state = ProcessState.DEAD;
-            signalTree(p, signal_);
-            break;
+    case Signal.KILL_TREE:
+        p.state = ProcessState.DEAD;
+        signalTree(p, signal_);
+        break;
 
-        case Signal.SLEEP_TREE:
-            p.state = ProcessState.SLEEP;
-            signalTree(p, signal_);
-            break;
+    case Signal.SLEEP_TREE:
+        p.state = ProcessState.SLEEP;
+        signalTree(p, signal_);
+        break;
 
-        case Signal.FREEZE_TREE:
-            p.state = ProcessState.FREEZE;
-            signalTree(p, signal_);
-            break;
+    case Signal.FREEZE_TREE:
+        p.state = ProcessState.FREEZE;
+        signalTree(p, signal_);
+        break;
 
-        case Signal.WAKEUP_TREE:
-            p.state = ProcessState.HOLD;
-            signalTree(p, signal_);
-            break;
+    case Signal.WAKEUP_TREE:
+        p.state = ProcessState.HOLD;
+        signalTree(p, signal_);
+        break;
     }
 }
 
@@ -105,22 +101,22 @@ unittest {
 
     // given("A single process")
     auto p = new MyProcess(0);
-    
+
     // expect("Initial process state must be HOLD")
     p.state.should.be.equal(ProcessState.HOLD);
 
     // expect("Signaling SLEEP, changes state to sleep")
     signal(p, Signal.SLEEP);
     p.state.should.be.equal(ProcessState.SLEEP);
-    
+
     // expect("Signaling FREEZ, changes state to freeze")
     signal(p, Signal.FREEZE);
     p.state.should.be.equal(ProcessState.FREEZE);
-    
+
     // expect("Signaling WAKEUP, changes state to hold")
     signal(p, Signal.WAKEUP);
     p.state.should.be.equal(ProcessState.HOLD);
-    
+
     // expect("Signaling KILL, kills the process")
     signal(p, Signal.KILL);
     p.state.should.be.equal(ProcessState.DEAD);
@@ -193,7 +189,7 @@ unittest {
 
     signal(lvl1[0], Signal.SLEEP_TREE);
     root.state.should.be.equal(ProcessState.HOLD);
-    lvl1[1..$].each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    lvl1[1 .. $].each!(c => c.state.should.be.equal(ProcessState.HOLD));
     lvl2.each!(c => c.state.should.be.equal(ProcessState.SLEEP));
     lvl1[0].state.should.be.equal(ProcessState.SLEEP);
 
@@ -220,8 +216,6 @@ unittest {
     signal(root, Signal.WAKEUP_TREE);
     root.state.should.be.equal(ProcessState.HOLD);
     lvl1[0].state.should.be.equal(ProcessState.DEAD);
-    lvl1[1..$].each!(c => c.state.should.be.equal(ProcessState.HOLD));
+    lvl1[1 .. $].each!(c => c.state.should.be.equal(ProcessState.HOLD));
     lvl2.each!(c => c.state.should.be.equal(ProcessState.DEAD));
 }
-
-

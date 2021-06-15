@@ -2,18 +2,16 @@ module ddiv.core.mainprocess;
 
 import ddiv.core.process;
 import ddiv.core.scheduler;
-import ddiv.core.aux;
+import ddiv.core.tostring;
 
 /// Initial process
-class MainProcess : Process
-{
+class MainProcess : Process {
     /**
      * Creates the initial process
      * @param args Arguments
      * @param mainFunction Code to be execute as main
      */
-    this(string[] args)
-    {
+    this(string[] args) {
         this._args = args;
         Scheduler.get().reset(); // Work around
         // Orphan, id 1, and max priorty
@@ -21,13 +19,13 @@ class MainProcess : Process
     }
 
     /// Executes the main loop. Only finishs when all remaning processes has die or an exception is throw
-    final void mainLoop()
-    {
+    final void mainLoop() {
         do {
             this.doFrame();
-        } while(!Scheduler.get().empty);
+        }
+        while (!Scheduler.get().empty);
     }
-    
+
     /*
     override string toString()
     {
@@ -39,8 +37,7 @@ class MainProcess : Process
     mixin ToString!MainProcess;
 
 protected:
-    final override int run()
-    {
+    final override int run() {
         return this.main(this._args);
     }
 
@@ -48,11 +45,11 @@ protected:
     // TODO No usa un delegate, si no extender un método main y quitar el final de la clase, pero ponerselo a run
 
     /// Execute a game frame
-    final void doFrame()
-    {
+    final void doFrame() {
         // frame_start
-        debug(ShowFrame) {
+        debug (ShowFrame) {
             import ddiv.log;
+
             trace("Frame start");
         }
         Scheduler.get().deleteDeadProcess();
@@ -61,10 +58,12 @@ protected:
         // Execute processes
         do {
             Scheduler.get().executeNextProcess();
-        } while (Scheduler.get().hasProcessesToExecute);
+        }
+        while (Scheduler.get().hasProcessesToExecute);
 
-        debug(ShowFrame) {
+        debug (ShowFrame) {
             import ddiv.log;
+
             trace("Frame end");
         }
         // frame_end
@@ -73,5 +72,3 @@ protected:
 private:
     string[] _args;
 }
-
-

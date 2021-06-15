@@ -4,8 +4,8 @@ PriortyQueue build over a BinaryHeap
 module ddiv.container.priorityqueue;
 
 import std.array;
-import std.range: assumeSorted;
-import std.typecons: Tuple;
+import std.range : assumeSorted;
+import std.typecons : Tuple;
 
 /**
  * Templated Priority Queue
@@ -72,12 +72,12 @@ struct PriorityQueue(P, V, alias predicate = "a > b") {
     /// Removes an entry of the heap
     void remove(PV rec) @trusted {
         import std.algorithm.mutation : remove;
+
         this._q = this._q.remove!(x => x == rec);
     }
 
     /// Removes an entry of the heap
-    void remove(P priority, V value) @trusted
-    {
+    void remove(P priority, V value) @trusted {
         this.remove(PV(priority, value));
     }
 
@@ -92,7 +92,7 @@ struct PriorityQueue(P, V, alias predicate = "a > b") {
         qreturn._q = this._q.dup;
 
         // Add in all the elements of the merging queue
-        foreach(rec; qmerge) {
+        foreach (rec; qmerge) {
             qreturn.insert(rec);
         }
 
@@ -102,17 +102,17 @@ struct PriorityQueue(P, V, alias predicate = "a > b") {
 
 }
 
-version(unittest) import pijamas;
+version (unittest) import pijamas;
 
 @("PriorityQueue")
 unittest {
     alias P = int;
     alias V = string;
     alias PQ = PriorityQueue!(P, V, "a < b");
-    alias PV =  PQ.PV;
+    alias PV = PQ.PV;
     PQ pq, pq2, pq3;
 
-    import std.typecons: tuple;
+    import std.typecons : tuple;
 
     // Test basic insertion
     pq.insert(10, "HELLO10");
@@ -124,8 +124,9 @@ unittest {
 
     pq.should.have.length(6);
 
-    foreach (const e; pq) {}    // iteration
-    pq.should.not.be.empty;          // shouldn't consume queue
+    foreach (const e; pq) {
+    } // iteration
+    pq.should.not.be.empty; // shouldn't consume queue
 
     // Copy by value
     pq2 = pq;
@@ -163,14 +164,14 @@ unittest {
 
 @("PriorityQueue 2")
 unittest {
-    debug(PriorityQueueTestStdout) {
+    debug (PriorityQueueTestStdout) {
         import std.stdio : writefln, writeln;
     }
 
     alias P = int;
     alias V = string;
     alias PQ = PriorityQueue!(P, V);
-    alias PV =  PQ.PV;
+    alias PV = PQ.PV;
 
     PQ pq, pq2, pq3;
 
@@ -184,19 +185,21 @@ unittest {
     pq2.insert(PV(15, "HELLO15"));
     pq2.insert(PV(21, "HELLO21"));
 
-    debug(PriorityQueueTestStdout) {
+    debug (PriorityQueueTestStdout) {
         writefln("\tPQ: %s \n\tPQ2: %s \n\tPQ3: %s", pq, pq2, pq3);
     }
     pq3 = pq.merge(pq2);
 
-    debug(PriorityQueueTestStdout) {
+    debug (PriorityQueueTestStdout) {
         import std.algorithm : map;
+
         writeln(pq3.map!(x => x.priority));
     }
     int oldPriority = int.max;
-    foreach(i, tuple; pq3) {
-        debug(PriorityQueueTestStdout) {
-            writefln("Pos: %s \t Priority: %s \tValue: %s \tLength: %s", i, tuple.priority, tuple.value, pq3.length);
+    foreach (i, tuple; pq3) {
+        debug (PriorityQueueTestStdout) {
+            writefln("Pos: %s \t Priority: %s \tValue: %s \tLength: %s", i, tuple.priority, tuple.value, pq3
+                    .length);
         }
         tuple.priority.should.not.be.biggerThan(oldPriority);
         oldPriority = tuple.priority;
@@ -204,4 +207,3 @@ unittest {
     }
     pq3.should.be.empty;
 }
-

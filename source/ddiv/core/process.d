@@ -4,9 +4,10 @@ Process implemented over Fibers
 module ddiv.core.process;
 
 import core.thread.fiber;
+
 //import jdiutil;
 import ddiv.core.scheduler;
-import ddiv.core.aux;
+import ddiv.core.tostring;
 
 /// Id of a process
 alias ProcessId = uint;
@@ -29,8 +30,7 @@ enum ProcessState : ubyte {
 }
 
 /// Process based on Fibers, following the processes of DIV lang
-class Process
-{
+class Process {
 private:
     ProcessId _id = UNINITIALIZED_ID; // Process ID
     @NoString
@@ -47,14 +47,12 @@ package:
 
 public:
     /// Creates a DDiv Process
-    this(ProcessId fatherId)
-    {
+    this(ProcessId fatherId) {
         this(fatherId, UNINITIALIZED_ID, 0);
     }
 
     /// Creates a DDiv Process with a preassigned ID and priority
-    protected this(uint fatherId, uint id = UNINITIALIZED_ID, int priority = 0)
-    {
+    protected this(uint fatherId, uint id = UNINITIALIZED_ID, int priority = 0) {
         this._fiber = new Fiber(&runner);
         this._fatherId = fatherId;
         this._id = id;
@@ -63,50 +61,42 @@ public:
     }
 
     /// Returns process Id
-    final inout(ProcessId) id() inout const pure @nogc @safe nothrow
-    {
+    final inout(ProcessId) id() inout const pure @nogc @safe nothrow {
         return this._id;
     }
 
     /// Process Id of father process
-    final inout(ProcessId) fatherId() inout const pure @nogc @safe nothrow
-    {
+    final inout(ProcessId) fatherId() inout const pure @nogc @safe nothrow {
         return this._fatherId;
     }
 
     /// Return father Process
-    final auto father() inout @safe
-    {
+    final auto father() inout @safe {
         return Scheduler.get().getProcessById(this._fatherId);
     }
 
     /// Returns if this process is orphan
-    final bool orphan() const pure @nogc @safe nothrow
-    {
+    final bool orphan() const pure @nogc @safe nothrow {
         return this._fatherId == 0;
     }
 
     /// Children processes ids
-    final inout(ProcessId[]) childrenIds() inout pure @nogc @safe nothrow
-    {
+    final inout(ProcessId[]) childrenIds() inout pure @nogc @safe nothrow {
         return this._childrenIds;
     }
 
     /// Children processes
-    final auto childrens() inout @safe
-    {
+    final auto childrens() inout @safe {
         return Scheduler.get().getProcessById(this._childrenIds);
     }
 
     /// Return process priority
-    final inout(int) priority() inout const pure @nogc @safe nothrow
-    {
+    final inout(int) priority() inout const pure @nogc @safe nothrow {
         return this._priority;
     }
 
     /// Changes process priority
-    final void priority(int priority)
-    {
+    final void priority(int priority) {
         if (priority != this.priority) {
             Scheduler.get().changeProcessPriority(this, this._priority, priority);
             this._priority = priority;
@@ -114,8 +104,7 @@ public:
     }
 
     /// Returns ptocess state
-    final ProcessState state() const pure @nogc @safe nothrow
-    {
+    final ProcessState state() const pure @nogc @safe nothrow {
         return this._state;
     }
 
@@ -131,8 +120,7 @@ public:
      * executed again in 4 frames. A value of 50 (50%), indicates that the process has done only 50% of the work, and it
      * would be executed again on this frame.
      */
-    final void frame(uint percent = 100)
-    {
+    final void frame(uint percent = 100) {
         this._frame += percent;
         if (this._frame >= 100) {
             this._frame -= 100;
@@ -143,70 +131,59 @@ public:
     }
 
     /// Returned value from the process when it ends
-    final int returnValue() const pure nothrow @safe
-    {
+    final int returnValue() const pure nothrow @safe {
         return this._return;
     }
 
     /// Comparation operator
-    int opCmp(ref const Process other) const pure nothrow @safe
-    {
+    int opCmp(ref const Process other) const pure nothrow @safe {
         return this._id - other._id;
     }
 
     /// Equals operator (check for equality).
-    bool opEquals()(auto ref const Process other) const pure nothrow @safe
-    {
+    bool opEquals()(auto ref const Process other) const pure nothrow @safe {
         return this._id == this._id;
     }
 
-    override size_t toHash() const pure nothrow @safe
-    {
+    override size_t toHash() const pure nothrow @safe {
         return this._id.hashOf();
     }
-    
+
     mixin ToString!Process;
 
 package:
 
     /// Continues with the execution of this process
-    final void call()
-    {
+    final void call() {
         this._state = ProcessState.RUNNING;
         this._fiber.call();
     }
 
     /// Devuelve el estado de la fibra
-    final Fiber.State fiberState()
-    {
+    final Fiber.State fiberState() {
         return this._fiber.state;
     }
 
     /// Changes the process Id
-    final void id(ProcessId id) pure @nogc @safe
-    {
+    final void id(ProcessId id) pure @nogc @safe {
         this._id = id;
     }
 
     /// Process Id of father process
-    final void fatherId(ProcessId fatherId) pure @nogc @safe
-    {
+    final void fatherId(ProcessId fatherId) pure @nogc @safe {
         this._fatherId = fatherId;
     }
     /// Children process ids
-    final void childrenIds(ProcessId[] childrenIds) pure @nogc @safe
-    {
+    final void childrenIds(ProcessId[] childrenIds) pure @nogc @safe {
         this._childrenIds = childrenIds;
     }
 
-    final void state(ProcessState state) @safe
-    {
+    final void state(ProcessState state) @safe {
         this._state = state;
     }
 
     /// Sets the returned value of the process when it ends.
-    final void returnValue(int returnValue)
-    {
+    final void returnValue(int returnValue) {
         this._return = returnValue;
     }
 
@@ -218,14 +195,11 @@ protected:
 private:
 
     /// Wrapper around run() to assign the returned value
-    void runner()
-    {
-        scope(exit) {
+    void runner() {
+        scope (exit) {
             this._state = ProcessState.DEAD;
         }
         this.returnValue(this.run());
     }
 
 }
-
-

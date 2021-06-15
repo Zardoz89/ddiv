@@ -4,7 +4,7 @@
 		{
 			"type": "dub",
 			"run": false,
-			"test": true,
+            "test": true,
 			"cwd": "${workspaceFolder}",
 			"compiler": "dmd",
 			"archType": "x86_64",
@@ -16,8 +16,8 @@
 			],
             "args": ["--", "\"-t 1\""],
 			"group": "build",
-			"label": "## Dub build ddiv tests",
-			"detail": "dub test --compiler=dmd -a=x86_64 -b=unittest -c=unittest"
+			"label": "## dub-auto: Build containers",
+			"detail": "dub test --compiler=dmd -a=x86_64 -b=debug -c=memory"
 		}
 	]
 }

@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) ddiv tests",
+            "name": "(gdb) ddiv containers tests",
             "visualizerFile": "${workspaceFolder}/dlang.natvis",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/ddiv-test-unittest",
+            "program": "${workspaceFolder}/bin/containers-test-unittest",
             "args": ["-t", "1"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "preLaunchTask": "## Dub build ddiv tests",
+            "preLaunchTask": "## dub-auto: Build containers",
             "setupCommands": [
                 {
                     "description": "Habilitar la impresión con sangría para gdb",
