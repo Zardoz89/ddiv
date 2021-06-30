@@ -10,7 +10,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/containers-test-unittest",
-            "args": ["-t", "1"],
+            "args": ["-t", "1", "-i \"SimpleList with structs\""],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
