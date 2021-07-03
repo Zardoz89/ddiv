@@ -44,8 +44,11 @@
             "versions": ["advProfiler"],
             "dependencies": {
                 "ikod-containers": "~>0.0.20",
-                "pijamas": "~>1",
+                "pijamas": "~>1.1",
                 "silly": "~>1.2.0-dev.1"
+            },
+            "subConfigurations": {
+                "pijamas": "nogc"
             },
             "importPaths": [
                 "source",

@@ -250,9 +250,8 @@ struct SimpleStack(T, Allocator = Mallocator)
     }
 }
 
-@("SimpleStack")
-@safe
-unittest
+@("SimpleStack @nogc")
+@safe @nogc unittest
 {
     import pijamas;
 
@@ -262,8 +261,6 @@ unittest
         s.capacity.should.be.equal(16);
         s.length.should.be.equal(0);
         s.empty.should.be.True();
-
-        should(() { s.top; }).Throw!RangeError;
         s.contains(123).should.be.False();
 
         s ~= 100;
@@ -290,7 +287,7 @@ unittest
         import std.algorithm : isSorted, reverse;
 
         s.range.isSorted!("a > b").should.be.True;
-        s.range.array.should.be.equal(iota(0, 10_240).array.reverse);
+        //s.range.array.should.be.equal(iota(0, 10_240).array.reverse);
 
         s.clear();
         s.length.should.be.equal(0);
@@ -327,7 +324,10 @@ unittest
         s.length.should.be.equal(0);
         s.empty.should.be.True;
 
-        should(() { cast(void) s.top; }).Throw!RangeError;
+        should(() {
+            auto emptyStack = SimpleStack!S();
+            cast(void) emptyStack.top;
+        }).Throw!RangeError;
 
         s ~= S(10, 20);
         s.top.should.be.equal(S(10, 20));
@@ -354,5 +354,26 @@ unittest
         import std.algorithm.searching : canFind;
 
         s.range.canFind(S(120, -1)).should.be.True;
+    }
+}
+
+@("SimpleStack")
+@safe unittest
+{
+    import pijamas;
+
+    {
+        auto s = SimpleStack!int();
+
+        should(() {
+            s.top;
+        }).Throw!RangeError;
+
+        import std.range : iota, array;
+        import std.algorithm : isSorted, reverse;
+
+        s ~= iota(0, 10_240);
+        s.range.isSorted!("a > b").should.be.True;
+        s.range.array.should.be.equal(iota(0, 10_240).array.reverse);
     }
 }

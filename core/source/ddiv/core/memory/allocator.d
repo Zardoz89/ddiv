@@ -1,6 +1,10 @@
 module ddiv.core.memory.allocator;
 
-private shared bool memoryProfilerEnabled = true;
+debug {
+    private shared bool memoryProfilerEnabled = true;
+} else {
+    private shared bool memoryProfilerEnabled = false;
+}
 private shared size_t totalAllocatedMemory = 0;
 
 pragma(inline, true)
@@ -17,19 +21,19 @@ private void subAllocatedMemory(size_t size) nothrow @nogc {
     atomicOp!"-="(totalAllocatedMemory, size);
 }
 
-void enableMemoryProfiler() {
+void enableMemoryProfiler() @nogc @safe {
     import core.atomic : atomicStore;
 
     atomicStore(memoryProfilerEnabled, true);
 }
 
-void disableMemoryProfiler() {
+void disableMemoryProfiler() @nogc @safe{
     import core.atomic : atomicStore;
 
     atomicStore(memoryProfilerEnabled, false);
 }
 
-bool isEnabledMemoryProfiler() {
+bool isEnabledMemoryProfiler() @nogc @safe {
     return memoryProfilerEnabled;
 }
 
@@ -570,8 +574,8 @@ version(advProfiler) {
     }
 }
 
-@("Allocator profiled helpers")
-unittest {
+@("@nogc Allocator profiled helpers")
+@trusted @nogc unittest {
     import pijamas;
     import std.experimental.allocator.mallocator : Mallocator;
 
@@ -602,6 +606,7 @@ unittest {
     totalAllocatedMemory.should.be.equal(0);
 
     {
+        import std.array : staticArray;
         auto array = Mallocator.instance.make!(int[])(5, 333);
         scope (exit)
             Mallocator.instance.dispose(array);
@@ -610,20 +615,43 @@ unittest {
 
         array.should.have.length(5);
         totalAllocatedMemory.should.be.equal(int.sizeof * array.length);
-        array.should.be.equal([100, 200, 333, 333, 333]);
+        array.should.be.equal([100, 200, 333, 333, 333].staticArray);
 
         Mallocator.instance.expandArray(array, 16, 666);
         totalAllocatedMemory.should.be.equal(int.sizeof * array.length);
         array.should.be.equal([100, 200, 333, 333, 333,
             666, 666, 666, 666, 666, 666, 666, 666,
             666, 666, 666, 666, 666, 666, 666, 666,
-        ]);
+        ].staticArray);
         // printMemoryLog();
     }
     totalAllocatedMemory.should.be.equal(0);
 
+    {
+        struct S {
+            int x, y;
+        }
 
-    /+
+        auto s = Mallocator.instance.make!S();
+        scope (exit)
+            Mallocator.instance.dispose(s);
+
+        s.x.should.be.equal(int.init);
+        s.y.should.be.equal(int.init);
+        totalAllocatedMemory.should.be.equal(s.sizeof);
+    }
+    totalAllocatedMemory.should.be.equal(0);
+
+}
+
+@("gc dependant Allocator profiled helpers")
+@trusted unittest {
+    import pijamas;
+    import std.experimental.allocator.mallocator : Mallocator;
+
+    enableMemoryProfiler();
+
+     /+
     {
         auto gcArray = [1, 2, 3, 4, 5, 6];
         auto array = Mallocator.instance.make!(int[])(gcArray);
@@ -658,21 +686,6 @@ unittest {
     totalAllocatedMemory.should.be.equal(0);
 
     {
-        struct S {
-            int x, y;
-        }
-
-        auto s = Mallocator.instance.make!S();
-        scope (exit)
-            Mallocator.instance.dispose(s);
-
-        s.x.should.be.equal(int.init);
-        s.y.should.be.equal(int.init);
-        totalAllocatedMemory.should.be.equal(s.sizeof);
-    }
-    totalAllocatedMemory.should.be.equal(0);
-
-    {
         __gshared int dtorCalledTimes = 0;
         struct S {
             int x, y;
@@ -696,6 +709,29 @@ unittest {
 
         s.x.should.be.equal(123);
         s.y.should.be.equal(123);
+    }
+    totalAllocatedMemory.should.be.equal(0);
+
+
+    {
+        class C
+        {
+            int x, y;
+
+            this(int x, int y) @nogc
+            {
+                this.x = x;
+                this.y = y;
+            }
+            ~this() @nogc {}
+        }
+
+        C c = Mallocator.instance.make!C(1, 200);
+        scope (exit)
+            Mallocator.instance.dispose(c);
+
+        c.x.should.be.equal(1);
+        c.y.should.be.equal(200);
     }
     totalAllocatedMemory.should.be.equal(0);
 

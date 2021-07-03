@@ -279,9 +279,8 @@ if (isAllocator!Allocator && !isArray!T) {
     }
 }
 
-@("SimpleList with scalar and simple structs")
-@safe
-unittest {
+@("SimpleList with scalar and simple structs @nogc")
+@safe @nogc unittest {
     import pijamas;
 
     {
@@ -291,9 +290,24 @@ unittest {
         l.length.should.be.equal(0);
         l.empty.should.be.True;
 
-        should(() { l.back; }).Throw!RangeError;
-        should(() { l.front; }).Throw!RangeError;
-        should(() { cast(void) l[123]; }).Throw!RangeError;
+        /+
+        this instances aren't never deallocated, becasue some thing of D with anonymus functions
+        should(() {
+            auto l = SimpleList!int();
+            l.reserve(16);
+            l.back;
+        }).Throw!RangeError;
+        should(() {
+            auto l = SimpleList!int();
+            l.reserve(16);
+            l.front;
+        }).Throw!RangeError;
+        should(() {
+            auto l = SimpleList!int();
+            l.reserve(16);
+            cast(void) l[123];
+        }).Throw!RangeError;
+        +/
 
         l ~= 100;
         l.back.should.be.equal(100);
@@ -315,21 +329,23 @@ unittest {
         l[0].should.be.equal(l.front);
         l[100].should.be.equal(100);
 
-        l[].should.be.equal(iota(0, 10_240).array);
-        l[0 .. 100].should.be.equal(iota(0, 100).array);
-        l[1_000 .. $].should.be.equal(iota(1_000, 10_240).array);
-        should(() { cast(void) l[-1 .. 100]; }).Throw!RangeError;
-        should(() { cast(void) l[200 .. 100]; }).Throw!RangeError;
-        should(() { cast(void) l[10 .. 20_000]; }).Throw!RangeError;
-
-        import std.algorithm : isSorted;
-
-        l.range.isSorted.should.be.True;
-        l.range.array.should.be.equal(iota(0, 10_240).array);
-
-        import std.algorithm.searching : canFind;
-
-        l.range.canFind(512).should.be.True;
+        /+
+        should(() {
+            auto l = SimpleList!int();
+            l ~= iota(0, 256);
+            cast(void) l[-1 .. 100];
+        }).Throw!RangeError;
+        should(() {
+            auto l = SimpleList!int();
+            l ~= iota(0, 256);
+            cast(void) l[200 .. 100];
+        }).Throw!RangeError;
+        should(() {
+            auto l = SimpleList!int();
+            l ~= iota(0, 256);
+            cast(void) l[10 .. 20_000];
+        }).Throw!RangeError;
+        +/
 
         l.clear();
         l.length.should.be.equal(0);
@@ -362,9 +378,23 @@ unittest {
         l.length.should.be.equal(0);
         l.empty.should.be.True;
 
-        should(() { l.back; }).Throw!RangeError;
-        should(() { l.front; }).Throw!RangeError;
-        should(() { cast(void) l[123]; }).Throw!RangeError;
+        /+
+        should(() {
+            auto l = SimpleList!S();
+            l.reserve(32);
+            l.back;
+        }).Throw!RangeError;
+        should(() {
+            auto l = SimpleList!S();
+            l.reserve(32);
+            l.front;
+        }).Throw!RangeError;
+        should(() {
+            auto l = SimpleList!S();
+            l.reserve(32);
+            cast(void) l[123];
+        }).Throw!RangeError;
+        +/
 
         l ~= S(10, 20);
         l.back.should.be.equal(S(10, 20));
@@ -395,8 +425,8 @@ unittest {
     }
 }
 
-@("SimpleList with structs with destructor")
-unittest {
+@("SimpleList with structs with destructor @nogc")
+@nogc unittest {
     import pijamas;
 
     static int dtor = 0;
@@ -445,4 +475,51 @@ unittest {
     l.clear();
     l.empty.should.be.True;
 
+}
+
+
+@("SimpleList with scalar and simple structs")
+@safe unittest {
+    import pijamas;
+
+    {
+        auto l = SimpleList!int();
+        l.reserve(16);
+
+        should(() {
+            l.back;
+        }).Throw!RangeError;
+        should(() {
+            l.front;
+        }).Throw!RangeError;
+        should(() {
+            cast(void) l[123];
+        }).Throw!RangeError;
+
+        import std.range : iota, array;
+
+        l ~= iota(0, 10_240);
+        l[].should.be.equal(iota(0, 10_240).array);
+        l[0 .. 100].should.be.equal(iota(0, 100).array);
+        l[1_000 .. $].should.be.equal(iota(1_000, 10_240).array);
+
+        should(() {
+            cast(void) l[-1 .. 100];
+        }).Throw!RangeError;
+        should(() {
+            cast(void) l[200 .. 100];
+        }).Throw!RangeError;
+        should(() {
+            cast(void) l[10 .. 20_000];
+        }).Throw!RangeError;
+
+        import std.algorithm : isSorted;
+
+        l.range.isSorted.should.be.True;
+        l.range.array.should.be.equal(iota(0, 10_240).array);
+
+        import std.algorithm.searching : canFind;
+
+        l.range.canFind(512).should.be.True;
+    }
 }
