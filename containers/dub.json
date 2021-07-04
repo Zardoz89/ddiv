@@ -28,6 +28,7 @@
         },
         {
             "name": "unittest",
+            "dflags-ldc": ["-fsanitize=address"],
             "dependencies": {
                 "pijamas": "~>1.1",
                 "silly": "~>1.2.0-dev.1"
@@ -36,6 +37,7 @@
                 "pijamas": "nogc",
                 "ddiv:core": "advProfiler"
             },
+
             "importPaths": [
                 "source",
                 "tests"
@@ -57,6 +59,6 @@
     "name": "containers",
     "toolchainRequirements": {
         "dub": ">=1.20.0",
-        "frontend": ">=2.91.0"
+        "frontend": ">=2.90.0"
     }
 }

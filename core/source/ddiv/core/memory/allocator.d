@@ -664,26 +664,6 @@ version(advProfiler) {
     }
     //totalAllocatedMemory.should.be.equal(0);
     +/
-    {
-        __gshared int dtorCalledTimes = 0;
-        struct S {
-            int x, y;
-
-            ~this() {
-                dtorCalledTimes++;
-            }
-        }
-
-        auto array = Mallocator.instance.make!(S[])(4);
-        scope (exit)
-            dtorCalledTimes.should.be.equal(4);
-        scope (exit)
-            Mallocator.instance.dispose(array);
-
-        array.should.have.length(4);
-        totalAllocatedMemory.should.be.equal(S.sizeof * array.length);
-    }
-    totalAllocatedMemory.should.be.equal(0);
 
     {
         __gshared int dtorCalledTimes = 0;
@@ -736,8 +716,8 @@ version(advProfiler) {
     totalAllocatedMemory.should.be.equal(0);
 
     {
-        __gshared int dtorCalledTimes = 0;
-        class C {
+        __gshared int cDtorCalledTimes = 0;
+        class C2 {
             int x, y;
 
             this(int x, int y) {
@@ -746,13 +726,13 @@ version(advProfiler) {
             }
 
             ~this() {
-                dtorCalledTimes++;
+                cDtorCalledTimes++;
             }
         }
 
-        C c = Mallocator.instance.make!C(1, 200);
+        C2 c = Mallocator.instance.make!C2(1, 200);
         scope (exit)
-            dtorCalledTimes.should.be.equal(1);
+            cDtorCalledTimes.should.be.equal(1);
         scope (exit)
             Mallocator.instance.dispose(c);
 
