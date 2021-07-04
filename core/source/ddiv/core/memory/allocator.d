@@ -111,18 +111,6 @@ shared static ~this(){
     }
 }
 
-/// Helper mixin to build containers using Allocators
-mixin template AllocatorState(Allocator) {
-    import std.experimental.allocator.common : stateSize;
-
-    static if (stateSize!Allocator == 0) {
-        alias allocator = Allocator.instance;
-    } else {
-        Allocator allocator;
-    }
-}
-
-
 import std.experimental.allocator : makeArray, _make = make, _expandArray = expandArray, _shrinkArray = shrinkArray,
     _dispose = dispose, _makeMultidimensionalArray = makeMultidimensionalArray,
     _disposeMultidimensionalArray = disposeMultidimensionalArray;

@@ -16,23 +16,8 @@ if (isAllocator!Allocator && !isArray!T) {
     private T[] elements = void;
     private size_t arrayLength = 0;
 
-    mixin AllocatorState!Allocator;
-
-    static if (stateSize!Allocator != 0) {
-        /// No default construction if an allocator must be provided.
-        this() @disable;
-
-        /**
-		 * Use the given `allocator` for allocations.
-		 */
-        this(Allocator allocator)
-        in {
-            assert(allocator !is null, "Allocator must not be null");
-        }
-        do {
-            this.allocator = allocator;
-        }
-    }
+    // Gets the struct constructor
+    mixin StructAllocator!Allocator;
 
     ~this() @nogc @trusted scope {
         this.free();

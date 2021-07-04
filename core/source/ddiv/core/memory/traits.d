@@ -57,3 +57,23 @@ enum isAllocator(T) = is(typeof(checkAllocator!T));
     static assert(isAllocator!Mallocator);
     static assert(!isAllocator!int);
 }
+
+/// Checks if an allocator stores state or not
+template isStatelessAllocator(Allocator) if (isAllocator!Allocator)
+{
+    import std.experimental.allocator.common : stateSize;
+    enum bool isStatelessAllocator = (stateSize!Allocator == 0);
+}
+
+@("isStatelessAllocator")
+@safe @nogc pure unittest
+{
+    import std.experimental.allocator.mallocator : Mallocator;
+    static assert(isStatelessAllocator!Mallocator);
+
+    import std.experimental.allocator.building_blocks.stats_collector : StatsCollector, Options;
+    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import std.experimental.allocator.building_blocks.free_list : FreeList;
+    alias AllocatorWithState = StatsCollector!(GCAllocator, Options.bytesUsed);
+    static assert(!isStatelessAllocator!AllocatorWithState);
+}
