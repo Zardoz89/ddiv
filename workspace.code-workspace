@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "containers"
+		},
+		{
+			"path": "core"
+		}
+	]
+}
