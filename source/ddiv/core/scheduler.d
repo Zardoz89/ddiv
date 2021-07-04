@@ -188,7 +188,7 @@ public:
 
     /// Removes all processes on the scheduler
     void reset() {
-        this._processes.length = 0;
+        this._processes.clear();
         this._processesById.clear;
         this.idManager.resetIds();
     }

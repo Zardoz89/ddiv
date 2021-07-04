@@ -233,7 +233,25 @@ if (isAllocator!Allocator && !isArray!T) {
             }
 
             auto length() const @nogc {
-                return self.length;
+                return index - end;
+            }
+
+            alias opDollar = length;
+
+            static if (__traits(isScalar, T)) {
+                inout(T) opIndex(size_t index) inout @nogc @safe {
+                    if (self.empty || index > self.length) {
+                        throw new RangeError("Indexing out of bounds of SimpleList");
+                    }
+                    return self.elements[index];
+                }
+            }  else {
+                ref inout(T) opIndex(size_t index) return inout @nogc @safe {
+                    if (self.empty || index > self.length) {
+                        throw new RangeError("Indexing out of bounds of SimpleList");
+                    }
+                    return self.elements[index];
+                }
             }
         }
 
