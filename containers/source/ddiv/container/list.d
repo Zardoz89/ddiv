@@ -12,7 +12,7 @@ import std.traits : isArray, hasIndirections;
  Only can contain scalar and structs
  */
 struct SimpleList(T, Allocator = Mallocator, bool supportGC = hasIndirections!T)
-if (isAllocator!Allocator && !isArray!T) {
+if (isAllocator!Allocator) {
     private T[] elements = void;
     private size_t arrayLength = 0;
 
@@ -155,8 +155,12 @@ if (isAllocator!Allocator && !isArray!T) {
     void insertInPlace(size_t location, T value)
     in (location <= arrayLength)
     {
-        if (this.empty || location >= this.length) {
+        if (this.empty || location > this.length) {
             throw new RangeError("Inserting value, out of bounds.");
+        }
+        if (location == this.length) {
+            this.insertBack(value);
+            return;
         }
 
         if (this.arrayLength >= this.capacity) {
@@ -357,6 +361,15 @@ if (isAllocator!Allocator && !isArray!T) {
 
     auto ptr(this This)() return {
         return &this.elements[0];
+    }
+
+    string toString() const
+    {
+        if (this.empty) {
+            return "[]";
+        }
+        import std.conv : to;
+        return this.elements[0..this.length].to!string;
     }
 }
 

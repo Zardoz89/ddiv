@@ -6,10 +6,11 @@ module ddiv.container.priorityqueue;
 import ddiv.core.memory;
 import ddiv.core.exceptions;
 import ddiv.container.common;
+import ddiv.container.list;
 import std.array;
 import std.experimental.allocator.mallocator : Mallocator;
 import std.range : assumeSorted;
-import std.traits : isScalarType;
+import std.traits : isScalarType, isArray, hasIndirections;
 import std.typecons : Tuple;
 
 /**
@@ -17,95 +18,74 @@ import std.typecons : Tuple;
  * Usage:     PriorityQueue!(PRIORITY_TYPE, VALUE_TYPE, OPTIONAL_PREDICATE)
  * Based on https://forum.dlang.org/post/mdqxpypqvgzyzwfgmsoh@forum.dlang.org
 */
-struct PriorityQueue(P, V, alias predicate = "a > b", Allocator = Mallocator)
-if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
+struct PriorityQueue(P, V, alias predicate = "a > b", Allocator = Mallocator, bool supportGC = hasIndirections!V)
+if (isAllocator!Allocator  && isScalarType!P) {
 
     // To make the code a bit more readable
     alias PV = Tuple!(P, "priority", V, "value");
 
     /// Internal storage on a dynamic array
-    private PV[] elements = void;
-    private size_t arrayLength = 0;
+    private SimpleList!(PV, Allocator, supportGC) list;
 
-    // Gets the struct constructor
-    mixin StructAllocator!Allocator;
+    import ddiv.core.memory.traits : isStatelessAllocator;
 
-    this(ref return scope PriorityQueue rhs) @disable;
+    static if (!isStatelessAllocator!Allocator)
+    {
+        /// No default construction if an allocator must be provided.
+        this() @disable;
 
-    ~this() @nogc @trusted scope {
+        /**
+         * Use the given `allocator` for allocations.
+         */
+        this(Allocator allocator) @nogc @safe pure nothrow
+        {
+            this.list = SimpleList!(PV, Allocator, supportGC)(allocator);
+        }
+    }
+
+    this(ref return PriorityQueue!(P, V, predicate, Allocator, supportGC) rhs)
+    {
+        this.list = SimpleList!(PV, Allocator, supportGC)(rhs.list);
+    }
+
+    ~this() @nogc @trusted {
         this.free();
     }
 
-    void free() @nogc @trusted scope {
-        if (!(this.elements is null)) {
-
-            /*
-            static if ((is(V == struct) || is(V == union)) && __traits(hasMember, V, "__xdtor")) {
-                foreach (ref element; elements[0 .. this.length]) {
-                    element.__xdtor();
-                }
-            }
-            */
-
-            allocator.dispose(this.elements);
-            this.elements = null;
-        }
-        this.clear();
+    void free() @nogc @trusted {
+        this.list.free();
     }
 
     void reserve(size_t newCapacity) @trusted
     in (newCapacity > 0, "Invalid capacity. Must greater that 0") {
-        if (this.length >= newCapacity) {
-            return;
-        }
-
-        if (this.elements is null) {
-            this.elements = allocator.make!(PV[])(newCapacity);
-        } else {
-            if (newCapacity > this.capacity) {
-                allocator.expandArray!PV(this.elements, newCapacity - this.capacity);
-            } else {
-                allocator.shrinkArray!PV(this.elements, this.capacity - newCapacity);
-            }
-        }
+        this.list.reserve = newCapacity;
     }
 
     void expand(size_t delta) @nogc @trusted {
-        if (this.elements is null) {
-            this.elements = allocator.make!(PV[])(delta);
-        } else {
-            allocator.expandArray!PV(this.elements, delta);
-        }
+        this.list.expand(delta);
     }
 
-    size_t capacity() const @nogc nothrow @safe {
-        return this.elements.length;
+    @property size_t capacity() const @nogc nothrow @safe {
+        return this.list.capacity;
+    }
+
+    @property void capacity(size_t newCapacity) @trusted {
+        this.reserve(newCapacity);
     }
 
     size_t opDollar() const @nogc nothrow @safe {
-        return this.arrayLength;
+        return this.list.length;
     }
 
     alias length = opDollar;
 
 
-    /// Determine if the queue is empty
     bool empty() const pure @nogc @safe {
-        return this.elements is null || this.length == 0;
+        return this.list.empty;
     }
 
     void clear() @nogc nothrow {
-        if (!this.empty) {
-            /*
-            static if ((is(T == struct) || is(T == union))
-                    && __traits(hasMember, T, "__xdtor")) {
-                foreach (ref element; elements[0 .. this.length]) {
-                    element.__xdtor();
-                }
-            }
-            */
-            this.arrayLength = 0;
-        }
+        this.list.clear;
     }
 
     /// Needed so foreach can work
@@ -113,63 +93,42 @@ if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
         if (this.empty) {
             throw new RangeError("PriotyQueue it's empty.");
         }
-        return this.elements.front;
+        return this.list.front;
     }
 
     alias top = front;
 
     /// Chop off the front of the array
-    void popFront() @nogc @safe {
-        if (!this.empty) {
-            /*
-            static if ((is(T == struct) || is(T == union))
-                    && __traits(hasMember, T, "__xdtor")) {
-                this.elements[0].__xdtor();
-            }
-            */
-            foreach (i; 0 .. this.arrayLength - 1) {
-                this.elements[i] = this.elements[i + 1];
-            }
-            this.arrayLength--;
-        }
+    void popFront() @nogc nothrow {
+        this.list.popFront;
     }
 
-    /// Insert a record via a template tuple
+    /// Insert a value via a templated tuple
     void insert(ref PV value) @trusted {
         // Empty queue?
         if (this.empty) {
-            if (this.elements is null) {
-                this.reserve(32);
-            }
-            if (this.arrayLength >= this.capacity) {
-                this.reserve(growCapacity(this.capacity));
-            }
-
-            // just put the record into the queue
-            this.elements[0] = value;
-            this.arrayLength++;
+            this.list ~= value;
             return;
         }
 
         // Assume the queue is already sorted according to PREDICATE
-        auto a = assumeSorted!(predicate)(this.elements[0 .. this.length]);
+        auto sortedRange = assumeSorted!(predicate)(this.list[]);
 
         // Find a slice containing records with priorities less than the insertion rec
-        auto p = a.lowerBound(value);
-        const location = p.length;
-        //writeln("-> ", p, " -- ", value, " l:", location);
-        this.insertInPlace(location, value);
-
+        auto lowerBound = sortedRange.lowerBound(value);
+        const location = lowerBound.length;
+        this.list.insertInPlace(location, value);
     }
 
     /// ditto
-    void insert(PV rec) @safe {
-        this.insert(rec);
+    void insert(PV value) @safe {
+        this.insert(value);
     }
 
-    void opOpAssign(string op)(PV rec) nothrow
+    /// ditto
+    void opOpAssign(string op)(PV value)
     if (op == "~") {
-        this.insert(rec);
+        this.insert(value);
     }
 
     /// Insert a record via decomposed priority and value
@@ -178,44 +137,24 @@ if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
         this.insert(rec);
     }
 
-    /// Moves to the right, the items of the internal list and inserts the new value
-    private void insertInPlace(size_t location, ref PV value)
-    in (location <= arrayLength)
-    {
-        if (this.elements is null) {
-            this.reserve(32);
-        }
-        if (this.arrayLength >= this.capacity) {
-            this.reserve(growCapacity(this.capacity));
-        }
-
-        if (location < this.arrayLength) {
-            foreach_reverse (i; location..this.arrayLength) {
-                this.elements[i+1] = this.elements[i];
-            }
-        }
-        this.elements[location] = value;
-        this.arrayLength++;
-    }
-
     /// Removes an entry of the heap
-    void remove(PV value) @trusted {
+    bool remove(PV value) @trusted {
+        if (this.empty) {
+            return false;
+        }
 
         // Assume the queue is already sorted according to PREDICATE
-        auto a = assumeSorted!(predicate)(this.elements[0 .. this.length]);
+        auto sortedRange = assumeSorted!(predicate)(this.list[]);
         // Obtains slices with previous, equal and rear respect to the element to find.
-        auto slices = a.trisect(value);
+        auto slices = sortedRange.trisect(value);
         if (slices[1].empty) {
-            return;
+            return false;
         }
-        assert (slices[1].length == 1);
-        const startLocation = slices[0].length;
-
-        // Moves rear elements to the left
-        foreach (i; startLocation .. this.arrayLength - 1) {
-            this.elements[i] = this.elements[i+1];
-        }
-        this.arrayLength--;
+        assert (slices[1].length >= 1);
+        const location = slices[0].length;
+        assert (location <= this.length);
+        this.list.remove(location);
+        return true;
     }
 
     /// Removes an entry of the heap
@@ -225,75 +164,19 @@ if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
 
     /// Returns a sorted range
     auto range(this This)() return @nogc nothrow @safe {
-        static struct Range {
-            private This* self;
-            private size_t frontIndex;
-            private size_t backIndex;
-
-            Range save() {
-                return this;
-            }
-
-            auto front() {
-                return self.elements[frontIndex];
-            }
-
-            void popFront() @nogc {
-                ++frontIndex;
-            }
-
-            auto back() {
-                return self.elements[backIndex];
-            }
-
-            void popBack() @nogc {
-                ++backIndex;
-            }
-
-            bool empty() const @nogc {
-                return frontIndex >= backIndex;
-            }
-
-            size_t length() const @nogc {
-                return frontIndex - backIndex;
-            }
-
-            alias opDollar = length;
-
-            ref inout(PV) opIndex(size_t index) inout @nogc @safe {
-                if (self.empty || index > self.length) {
-                    throw new RangeError("Indexing out of bounds.");
-                }
-                return self.elements[index];
-            }
-        }
-
-        import std.range.primitives : isForwardRange, isBidirectionalRange, isRandomAccessRange;
-
-        static assert(isForwardRange!Range);
-        static assert(isBidirectionalRange!Range);
-        static assert(isRandomAccessRange!Range);
-
-        return assumeSorted!(predicate)(Range(() @trusted { return &this; }(), 0, this.length));
+        return assumeSorted!(predicate)(this.list.range);
     }
 
-    auto opSlice(this This)() @safe scope return {
-        return this.elements[0 .. this.length];
+    auto opSlice(this This)() @safe return {
+        return this.list[];
     }
 
-    auto opSlice(this This)(size_t start, size_t end) @safe @nogc scope return {
-        if (end < start) {
-            throw new RangeError(
-                    "Slicing with invalid range. Start must be equal or less that end.");
-        }
-        if (end > this.length) {
-            throw new RangeError("Slicing out of bounds of SimpleList.");
-        }
-        return this.elements[start .. end];
+    auto opSlice(this This)(size_t start, size_t end) @safe @nogc return {
+        return this.list[start..end];
     }
 
-    auto ptr(this This)() return scope {
-        return &this.elements[0];
+    auto ptr(this This)() return {
+        return this.list.ptr;
     }
 
     /+
@@ -319,11 +202,7 @@ if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
 
     string toString() const
     {
-        if (this.empty) {
-            return "[]";
-        }
-        import std.conv : to;
-        return this.elements[0..this.length].to!string;
+        return this.list.toString;
     }
 }
 
@@ -334,15 +213,14 @@ unittest {
     {
         alias P = int;
         alias V = string;
-        alias PQ = PriorityQueue!(P, V, "a < b"); // Top have always the lowest value
+        alias PQ = PriorityQueue!(P, V, "a < b", Mallocator, false); // Top have always the lowest value
         alias PV = PQ.PV;
         PQ pq;
 
         pq.empty.should.be.True;
         should(() { pq.front; }).Throw!RangeError;
 
-        import std.typecons : tuple;
-
+        import std.stdio;
         // Test basic insertion
         pq.insert(10, "HELLO10");
         pq.front.should.be.equal(PV(10, "HELLO10"));
@@ -357,8 +235,8 @@ unittest {
         pq.insert(10, "HELLO10-2");
         pq.front.should.be.equal(PV(3, "HELLO3"));
 
-        pq.length.should.be.equal(6);
         pq.empty.should.be.False;
+        pq.length.should.be.equal(6);
 
         should(() { cast(void) pq.front; }).not.Throw!RangeError;
 
@@ -401,19 +279,16 @@ unittest {
         pq.empty.should.be.True;
         should(() { cast(void) pq.front; }).Throw!RangeError;
 
+        pq.insert(123, "Hello");
+        pq.insert(512, "Bye");
 
+        PQ pq2 = pq;
+        pq.clear;
+
+        // pq and pq2 should be independent
+        pq2.empty.should.be.False;
+        pq.empty.should.be.True;
         /+
-    // Copy by value
-    pq2 = pq;
-
-    foreach (priority, value; pq) {
-        pq.popFront();
-    }
-
-    // pq and pq2 should be independent
-    pq2.should.not.be.empty;
-    pq.should.be.empty;
-
     // Test merging
     pq3.insert(PV(12, "HELLO12"));
     pq3.insert(PV(17, "HELLO17"));
