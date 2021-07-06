@@ -230,6 +230,25 @@ struct SimpleStack(T, Allocator = Mallocator)
     {
         return &this.elements[0];
     }
+
+    import std.format : FormatSpec;
+    void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
+    {
+        import std.range : put;
+        if (this.empty) {
+            put(sink, "[]");
+            return;
+        }
+        put(sink, "[");
+        import std.format : formatValue;
+        foreach (index, el; this.elements[0..this.length]) {
+            formatValue(sink, el, fmt);
+            if (index + 1 < this.length) {
+                put(sink, ", ");
+            }
+        }
+        put(sink, "]");
+    }
 }
 
 @("SimpleStack @nogc")

@@ -200,9 +200,10 @@ if (isAllocator!Allocator  && isScalarType!P) {
     }
     +/
 
-    string toString() const
+    import std.format : FormatSpec;
+    void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
     {
-        return this.list.toString;
+        this.list.toString(sink, fmt);
     }
 }
 
