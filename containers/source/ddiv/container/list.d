@@ -19,11 +19,22 @@ if (isAllocator!Allocator && !isArray!T) {
     // Gets the struct constructor
     mixin StructAllocator!Allocator;
 
-    ~this() @nogc @trusted scope {
+    this(ref return SimpleList!(T, Allocator, supportGC) rhs)
+    {
+        allocator = rhs.allocator;
+        if (!rhs.empty) {
+            this.reserve(rhs.capacity);
+            foreach (element; rhs.range) {
+                this.insertBack(element);
+            }
+        }
+    }
+
+    ~this() @nogc @trusted {
         this.free();
     }
 
-    void free() @nogc @trusted scope {
+    void free() @nogc @trusted {
         if (!(this.elements is null)) {
 
             static if ((is(T == struct) || is(T == union)) && __traits(hasMember, T, "__xdtor")) {
@@ -93,8 +104,12 @@ if (isAllocator!Allocator && !isArray!T) {
         }
     }
 
-    size_t capacity() const @nogc nothrow @safe {
+    @property size_t capacity() const @nogc nothrow @safe {
         return this.elements.length;
+    }
+
+    @property void capacity(size_t newCapacity) @trusted {
+        this.reserve(newCapacity);
     }
 
     size_t opDollar() const @nogc nothrow @safe {
@@ -110,7 +125,7 @@ if (isAllocator!Allocator && !isArray!T) {
     /// O(1)
     void insertBack(T value) nothrow {
         if (this.elements is null) {
-            this.reserve(32);
+            this.reserve(DEFAULT_INITIAL_SIZE);
         }
         if (this.arrayLength >= this.capacity) {
             this.reserve(growCapacity(this.capacity));
@@ -119,6 +134,44 @@ if (isAllocator!Allocator && !isArray!T) {
     }
 
     alias put = insertBack;
+
+    void opIndexAssign(T value, size_t index)  {
+        if (this.empty || index >= this.length) {
+            throw new RangeError("Assignament out of bounds at invalid point.");
+        }
+        this.elements[index] = value;
+    }
+
+    void insertFront(T value) nothrow {
+        // Empty queue?
+        if (this.empty) {
+            this.insertBack(value);
+            return;
+        }
+        this.insertInPlace(0, value);
+    }
+
+    /// Moves to the right, the items of the internal list and inserts the new value
+    void insertInPlace(size_t location, T value)
+    in (location <= arrayLength)
+    {
+        if (this.empty || location >= this.length) {
+            throw new RangeError("Inserting value, out of bounds.");
+        }
+
+        if (this.arrayLength >= this.capacity) {
+            this.reserve(growCapacity(this.capacity));
+        }
+
+        if (location < this.arrayLength) {
+            foreach_reverse (i; location..this.arrayLength) {
+                this.elements[i+1] = this.elements[i];
+            }
+        }
+        this.elements[location] = value;
+        this.arrayLength++;
+    }
+
 
     /// O(1)
     auto ref T back() pure @nogc @safe {
@@ -173,6 +226,21 @@ if (isAllocator!Allocator && !isArray!T) {
         }
     }
 
+    /// Removes a value at a position
+    void remove(size_t index) @trusted @nogc nothrow
+    in (this.empty || index <= arrayLength)
+    {
+        if (this.empty) {
+            return;
+        }
+
+        // Moves rear elements to the left
+        foreach (i; index .. this.arrayLength - 1) {
+            this.elements[i] = this.elements[i+1];
+        }
+        this.arrayLength--;
+    }
+
     static if (__traits(isScalar, T)) {
         /// O(1)
         pragma(inline, true)
@@ -209,31 +277,39 @@ if (isAllocator!Allocator && !isArray!T) {
         }
     }
 
-    /// Returns a forward range
+    /// Returns a bidirectional/randomAccess range
     auto range(this This)() return @nogc nothrow @safe {
         static struct Range {
             private This* self;
-            private size_t index;
-            private size_t end;
+            private size_t frontIndex;
+            private size_t backIndex;
 
             Range save() {
                 return this;
             }
 
             auto front() {
-                return (*self)[index];
+                return (*self)[frontIndex];
             }
 
             void popFront() @nogc {
-                ++index;
+                ++frontIndex;
+            }
+
+            auto back() {
+                return self.elements[backIndex];
+            }
+
+            void popBack() @nogc {
+                ++backIndex;
             }
 
             bool empty() const @nogc {
-                return index >= end;
+                return frontIndex >= backIndex;
             }
 
-            auto length() const @nogc {
-                return index - end;
+            size_t length() const @nogc {
+                return frontIndex - backIndex;
             }
 
             alias opDollar = length;
@@ -241,32 +317,34 @@ if (isAllocator!Allocator && !isArray!T) {
             static if (__traits(isScalar, T)) {
                 inout(T) opIndex(size_t index) inout @nogc @safe {
                     if (self.empty || index > self.length) {
-                        throw new RangeError("Indexing out of bounds of SimpleList");
+                        throw new RangeError("Indexing out of bounds.");
                     }
                     return self.elements[index];
                 }
             }  else {
                 ref inout(T) opIndex(size_t index) return inout @nogc @safe {
                     if (self.empty || index > self.length) {
-                        throw new RangeError("Indexing out of bounds of SimpleList");
+                        throw new RangeError("Indexing out of bounds.");
                     }
                     return self.elements[index];
                 }
             }
         }
 
-        import std.range.primitives : isForwardRange;
+        import std.range.primitives : isForwardRange, isBidirectionalRange, isRandomAccessRange;
 
         static assert(isForwardRange!Range);
+        static assert(isBidirectionalRange!Range);
+        static assert(isRandomAccessRange!Range);
 
         return Range(() @trusted { return &this; }(), 0, this.length);
     }
 
-    auto opSlice(this This)() @safe scope return {
+    auto opSlice(this This)() @safe return {
         return this.elements[0 .. this.length];
     }
 
-    auto opSlice(this This)(size_t start, size_t end) @safe @nogc scope return {
+    auto opSlice(this This)(size_t start, size_t end) @safe @nogc return {
         if (end < start) {
             throw new RangeError(
                     "Slicing with invalid range. Start must be equal or less that end.");
@@ -277,7 +355,7 @@ if (isAllocator!Allocator && !isArray!T) {
         return this.elements[start .. end];
     }
 
-    auto ptr(this This)() return scope {
+    auto ptr(this This)() return {
         return &this.elements[0];
     }
 }
@@ -288,7 +366,7 @@ if (isAllocator!Allocator && !isArray!T) {
 
     {
         auto l = SimpleList!int();
-        l.reserve(16);
+        l.capacity = 16;
         l.capacity.should.be.equal(16);
         l.length.should.be.equal(0);
         l.empty.should.be.True;
@@ -321,6 +399,16 @@ if (isAllocator!Allocator && !isArray!T) {
         l.popBack;
         l.empty.should.be.True;
 
+        l.insertBack(123);
+        l.insertFront(321);
+        l.front.should.be.equal(321);
+        l.back.should.be.equal(123);
+
+        l.remove(0);
+        l.length.should.be.equal(1);
+        l.front.should.be.equal(123);
+        l.clear;
+
         // Stress test
         import std.range : iota, array;
 
@@ -331,6 +419,16 @@ if (isAllocator!Allocator && !isArray!T) {
         l.front.should.be.equal(0);
         l[0].should.be.equal(l.front);
         l[100].should.be.equal(100);
+        l.insertInPlace(1, -512);
+        l[1].should.be.equal(-512);
+        l[2].should.be.equal(1);
+        l.length.should.be.equal(10_241);
+        l[10] = -1024;
+        l[10].should.be.equal(-1024);
+        l.remove(333);
+        l.length.should.be.equal(10_240);
+        l.back.should.be.equal(10_240 - 1);
+        l[333].should.be.equal(333);
 
         /+
         should(() {
@@ -353,6 +451,13 @@ if (isAllocator!Allocator && !isArray!T) {
         l.clear();
         l.length.should.be.equal(0);
         l.capacity.should.be.biggerOrEqualThan(10_240);
+    }
+
+    {
+        auto l = SimpleList!int();
+        l ~= 123;
+        auto l2 = SimpleList!int(l);
+        l2.front.should.be.equal(123);
     }
 
     {
@@ -515,11 +620,6 @@ unittest {
         should(() {
             cast(void) l[10 .. 20_000];
         }).Throw!RangeError;
-
-        import std.algorithm : isSorted;
-
-        l.range.isSorted.should.be.True;
-        l.range.array.should.be.equal(iota(0, 10_240).array);
 
         import std.algorithm.searching : canFind;
 

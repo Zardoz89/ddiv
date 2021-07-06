@@ -20,12 +20,12 @@ struct SimpleStack(T, Allocator = Mallocator)
     // Gets the struct constructor
     mixin StructAllocator!Allocator;
 
-    ~this() @nogc @trusted scope
+    ~this() @nogc @trusted
     {
         this.free();
     }
 
-    void free() @nogc @trusted scope
+    void free() @nogc @trusted
     {
         if (!(this.elements is null))
         {
@@ -85,7 +85,7 @@ struct SimpleStack(T, Allocator = Mallocator)
     {
         if (this.elements is null)
         {
-            this.reserve(32);
+            this.reserve(DEFAULT_INITIAL_SIZE);
         }
         if (this.arrayLength >= this.capacity)
         {
@@ -226,7 +226,7 @@ struct SimpleStack(T, Allocator = Mallocator)
         return Range(() @trusted { return &this; }(), this.length - 1);
     }
 
-    auto ptr(this This)() return scope
+    auto ptr(this This)() return
     {
         return &this.elements[0];
     }

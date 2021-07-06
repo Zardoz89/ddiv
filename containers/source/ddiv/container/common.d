@@ -1,7 +1,9 @@
 module ddiv.container.common;
 /**
-Helper internal functions
+Helper internal functions & contants
 */
+
+immutable size_t DEFAULT_INITIAL_SIZE = 32;
 
 /// Round up's a unsigned value to the next power of 2
 pragma(inline, true)
