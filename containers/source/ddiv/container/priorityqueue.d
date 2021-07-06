@@ -198,7 +198,6 @@ if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
         this.arrayLength++;
     }
 
-    // TODO Testear remove
     /// Removes an entry of the heap
     void remove(PV value) @trusted {
 
@@ -224,7 +223,7 @@ if (isAllocator!Allocator  && isScalarType!P /*&& !is(V == class)*/) {
         this.remove(PV(priority, value));
     }
 
-    /// Returns a forward range
+    /// Returns a sorted range
     auto range(this This)() return @nogc nothrow @safe {
         static struct Range {
             private This* self;
