@@ -395,7 +395,7 @@ if (isAllocator!Allocator) {
         l.empty.should.be.True;
 
         /+
-        this instances aren't never deallocated, becasue some thing of D with anonymus functions
+        this instances aren't never deallocated, becasue some bug of DMD with anonymus functions
         should(() {
             auto l = SimpleList!int();
             l.reserve(16);
@@ -454,6 +454,7 @@ if (isAllocator!Allocator) {
         l[333].should.be.equal(333);
 
         /+
+        this instances aren't never deallocated, becasue some bug of DMD with anonymus functions
         should(() {
             auto l = SimpleList!int();
             l ~= iota(0, 256);
@@ -476,13 +477,14 @@ if (isAllocator!Allocator) {
         l.capacity.should.be.biggerOrEqualThan(10_240);
     }
 
-/+
+    /+
     {
         auto l = SimpleList!int();
         l ~= 123;
         auto l2 = SimpleList!int(l);
         l2.front.should.be.equal(123);
-    }+/
+    }
+    +/
 
     {
         struct S {
@@ -511,6 +513,7 @@ if (isAllocator!Allocator) {
         l.empty.should.be.True;
 
         /+
+        this instances aren't never deallocated, becasue some bug of DMD with anonymus functions
         should(() {
             auto l = SimpleList!S();
             l.reserve(32);
