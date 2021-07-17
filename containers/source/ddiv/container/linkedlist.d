@@ -74,7 +74,7 @@ if (isAllocator!Allocator && isScalarType!T) {
     alias length = opDollar;
     alias capacity = opDollar;
 
-    bool empty() const @nogc nothrow @safe pure {
+    bool empty() @property const @nogc nothrow @safe pure {
         return this._length == 0;
     }
 
@@ -116,12 +116,24 @@ if (isAllocator!Allocator && isScalarType!T) {
         return this._end.value;
     }
 
+    auto ref T moveBack() @nogc @safe {
+        T result = this.back;
+        this.popBack;
+        return result;
+    }
+
     /// O(1)
     auto ref T front() @property pure const @nogc @safe {
         if (this.empty) {
             throw new RangeError("LinkedList it's empty.");
         }
         return this._start.value;
+    }
+
+    auto ref T moveFront() @nogc @safe {
+        T result = this.front;
+        this.popFront();
+        return result;
     }
 
     /// O(1)

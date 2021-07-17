@@ -55,7 +55,7 @@ if (isAllocator!Allocator) {
         this.clear();
     }
 
-    void reserve(size_t newCapacity) @trusted
+    void reserve(size_t newCapacity) @trusted nothrow
     in (newCapacity > 0, "Invalid capacity. Must greater that 0") {
         if (this.length >= newCapacity) {
             return;
@@ -104,7 +104,7 @@ if (isAllocator!Allocator) {
         }
     }
 
-    @property size_t capacity() const @nogc nothrow @safe {
+    @property size_t capacity() pure const @nogc nothrow @safe {
         return this.elements.length;
     }
 
@@ -112,18 +112,18 @@ if (isAllocator!Allocator) {
         this.reserve(newCapacity);
     }
 
-    size_t opDollar() const @nogc nothrow @safe {
+    size_t opDollar() pure const @nogc nothrow @safe {
         return this.arrayLength;
     }
 
     alias length = opDollar;
 
-    bool empty() const @nogc nothrow @safe {
+    @property bool empty() pure const @nogc nothrow @safe {
         return this.elements is null || this.arrayLength == 0;
     }
 
     /// O(1)
-    void insertBack(T value) nothrow {
+    void insertBack(T value) nothrow @trusted {
         if (this.elements is null) {
             this.reserve(DEFAULT_INITIAL_SIZE);
         }
@@ -135,14 +135,14 @@ if (isAllocator!Allocator) {
 
     alias put = insertBack;
 
-    void opIndexAssign(T value, size_t index)  {
+    void opIndexAssign(T value, size_t index) @nogc @trusted  {
         if (this.empty || index >= this.length) {
             throw new RangeError("Assignament out of bounds at invalid point.");
         }
         this.elements[index] = value;
     }
 
-    void insertFront(T value) nothrow {
+    void insertFront(T value) @trusted {
         // Empty queue?
         if (this.empty) {
             this.insertBack(value);
@@ -152,7 +152,7 @@ if (isAllocator!Allocator) {
     }
 
     /// Moves to the right, the items of the internal list and inserts the new value
-    void insertInPlace(size_t location, T value)
+    void insertInPlace(size_t location, T value) @trusted
     in (location <= arrayLength)
     {
         if (this.empty || location > this.length) {
@@ -185,8 +185,14 @@ if (isAllocator!Allocator) {
         return this.elements[this.arrayLength - 1];
     }
 
+    auto ref T moveBack() @nogc @trusted {
+        T result = this.back;
+        this.popBack;
+        return result;
+    }
+
     /// O(1)
-    void popBack() @nogc nothrow {
+    void popBack() @nogc nothrow @trusted {
         if (!this.empty) {
             this.arrayLength--;
             static if ((is(T == struct) || is(T == union))
@@ -204,8 +210,14 @@ if (isAllocator!Allocator) {
         return this.elements[0];
     }
 
+    auto ref T moveFront() @nogc @trusted {
+        T result = this.front;
+        this.popFront();
+        return result;
+	}
+
     /// O(N)
-    void popFront() @nogc nothrow {
+    void popFront() @nogc @trusted nothrow {
         if (!this.empty) {
             static if ((is(T == struct) || is(T == union))
                     && __traits(hasMember, T, "__xdtor")) {
@@ -218,7 +230,7 @@ if (isAllocator!Allocator) {
         }
     }
 
-    void clear() @nogc nothrow {
+    void clear() @nogc nothrow @trusted {
         if (!this.empty) {
             static if ((is(T == struct) || is(T == union))
                     && __traits(hasMember, T, "__xdtor")) {
@@ -288,6 +300,11 @@ if (isAllocator!Allocator) {
             private size_t frontIndex;
             private size_t backIndex;
 
+            invariant() {
+                assert (self !is null);
+                assert (backIndex >= frontIndex);
+            }
+
             Range save() {
                 return this;
             }
@@ -301,19 +318,19 @@ if (isAllocator!Allocator) {
             }
 
             auto back() {
-                return self.elements[backIndex];
+                return (*self)[backIndex-1];
             }
 
             void popBack() @nogc {
-                ++backIndex;
+                --backIndex;
             }
 
             bool empty() const @nogc {
-                return frontIndex >= backIndex;
+                return this.length <= 0;
             }
 
             size_t length() const @nogc {
-                return frontIndex - backIndex;
+                return backIndex - frontIndex;
             }
 
             alias opDollar = length;
@@ -323,15 +340,22 @@ if (isAllocator!Allocator) {
                     if (self.empty || index > self.length) {
                         throw new RangeError("Indexing out of bounds.");
                     }
-                    return self.elements[index];
+                    return (*self)[index];
                 }
             }  else {
                 ref inout(T) opIndex(size_t index) return inout @nogc @safe {
                     if (self.empty || index > self.length) {
                         throw new RangeError("Indexing out of bounds.");
                     }
-                    return self.elements[index];
+                    return (*self)[index];
                 }
+            }
+
+            Range opSlice(size_t from, size_t to) @nogc @safe {
+                if (self.empty || from > to || from > self.length || from > this.length) {
+                    throw new RangeError("Indexing out of bounds.");
+                }
+                return Range(this.self, from + this.frontIndex, to);
             }
         }
 
@@ -383,12 +407,14 @@ if (isAllocator!Allocator) {
     }
 }
 
+import std.range.primitives : isInputRange;
+static assert (isInputRange!(SimpleList!int));
+
 @("SimpleList with scalar and simple structs @nogc")
 @safe @nogc unittest {
     import pijamas;
-
     {
-        auto l = SimpleList!int();
+        SimpleList!int l = SimpleList!int();
         l.capacity = 16;
         l.capacity.should.be.equal(16);
         l.length.should.be.equal(0);
@@ -485,6 +511,23 @@ if (isAllocator!Allocator) {
         l2.front.should.be.equal(123);
     }
     +/
+
+    {
+        import std.range : array, iota;
+
+        auto l = SimpleList!int();
+        l ~= iota(128);
+        auto r = l.range;
+        r.empty.should.be.False;
+        r.length.should.be.equal(128);
+        r.front.should.be.equal(0);
+        r.back.should.be.equal(128-1);
+        r[0].should.be.equal(r.front);
+        r[50].should.be.equal(50);
+
+        import std.algorithm : isSorted;
+        r.isSorted.should.be.True;
+    }
 
     {
         struct S {
@@ -587,7 +630,6 @@ if (isAllocator!Allocator) {
     dtor.should.be.equal(32*4);
 }
 
-
 @("SimpleList with class with destructor")
 unittest {
     import pijamas;
@@ -611,7 +653,6 @@ unittest {
     l.empty.should.be.True;
 
 }
-
 
 @("SimpleList with scalar and simple structs")
 @safe unittest {
@@ -651,5 +692,29 @@ unittest {
         import std.algorithm.searching : canFind;
 
         l.range.canFind(512).should.be.True;
+    }
+
+    {
+        import std.range : array, iota, retro;
+        import std.algorithm;
+
+        auto l = SimpleList!int();
+        l ~= iota(128);
+        auto r = l.range;
+        r.empty.should.be.False;
+        r.length.should.be.equal(128);
+
+        import std.algorithm : isSorted;
+        r.array.should.be.equal(iota(128).array);
+        r.retro.array.should.be.equal(iota(128).retro.array);
+        import std.range : assumeSorted, SearchPolicy;
+        auto sortedRange = r.assumeSorted;
+
+        // Find a slice containing records with keys less that the inserted key
+        auto lBound = sortedRange.lowerBound!(SearchPolicy.binarySearch, int)(50);
+        lBound.array.should.be.equal(iota(50).array);
+        r[lBound.length].should.be.equal(50);
+        auto uBound = sortedRange.upperBound!(SearchPolicy.binarySearch, int)(50);
+        uBound.array.should.be.equal(iota(51, 128).array);
     }
 }
